@@ -1,0 +1,13 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Match user documents and all nested subcollections (sessions, settings, etc.)
+    match /users/{userId}/{document=**} {
+      // Only allow access if the user is authenticated and their UID matches the path
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+  }
+}
