@@ -24,4 +24,20 @@ const db = initializeFirestore(app, {
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 
+// Initialize App Check
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+
+if (import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
+  if (import.meta.env.DEV) {
+    // Use the specific debug token from env if available, otherwise true (auto-gen)
+    // @ts-ignore
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_FIREBASE_APP_CHECK_DEBUG_TOKEN || true;
+  }
+
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
+    isTokenAutoRefreshEnabled: true
+  });
+}
+
 export { db, auth, googleProvider };

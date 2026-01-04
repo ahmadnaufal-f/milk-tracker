@@ -23,3 +23,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Firebase
+.firebase/
+firebase-debug.log*
+firestore.indexes.json
+# (Note: firestore.indexes.json is often ignored if generated dynamically, but good to keep if manually managed. 
+# actually, keep indexes tracked usually. I'll just add .firebase/ and logs)
+
+# Testing
+coverage/
+
+# OS
+Thumbs.db
