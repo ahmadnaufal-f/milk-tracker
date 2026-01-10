@@ -111,3 +111,30 @@ export const subscribeToSessions = (userId: string, callback: (sessions: Pumping
         callback(sessions);
     });
 };
+
+export const subscribeToMonthlySessions = (userId: string, date: Date, callback: (sessions: PumpingSession[]) => void) => {
+    // Calculate start and end of the month
+    const startOfMonth = new Date(date);
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const endOfMonth = new Date(date);
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+    endOfMonth.setDate(0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const q = query(
+        getUserSessionsCollection(userId),
+        orderBy("startedAt", "desc"),
+        where("startedAt", ">=", startOfMonth.toISOString()),
+        where("startedAt", "<=", endOfMonth.toISOString())
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const sessions = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data() as Omit<PumpingSession, 'id'>,
+        }));
+        callback(sessions);
+    });
+};

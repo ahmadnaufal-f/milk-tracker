@@ -11,3 +11,15 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+// reload page if the root element is empty after a short delay
+const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+
+if (isPWA) {
+  setTimeout(() => {
+    if (!document.getElementById('root')?.hasChildNodes()) {
+      console.warn("PWA load failed, forcing reload...");
+      window.location.reload();
+    }
+  }, 2000);
+}

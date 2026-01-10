@@ -67,7 +67,7 @@
     --destructive: oklch(62.625% 0.22024 23.947);
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
-    --ring: oklch(0.205 0 0);
+    --ring: var(--color-purple-800);
     --chart-1: oklch(0.646 0.222 41.116);
     --chart-2: oklch(0.6 0.118 184.704);
     --chart-3: oklch(0.398 0.07 227.392);
@@ -81,7 +81,7 @@
     --sidebar-accent: oklch(0.97 0 0);
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar-ring: var(--color-purple-800);
 
     /* Custom */
     --color-heading: #470C62;
@@ -92,17 +92,17 @@
     --color-card-border: #F8E6FA;
 
     /* Heading Purple Scale (#470C62 is ~900) */
-    --color-purple-50: #FAF5FD;
-    --color-purple-100: #F3E8FA;
-    --color-purple-200: #E6CCF3;
-    --color-purple-300: #D4A3EA;
-    --color-purple-400: #BE7AE0;
-    --color-purple-500: #A652D5;
-    --color-purple-600: #8839B6;
-    --color-purple-700: #6C2894;
-    --color-purple-800: #541D73;
-    --color-purple-900: #470C62;
-    --color-purple-950: #2D0542;
+    --color-purple-50: oklch(0.98 0.008 315);
+    --color-purple-100: oklch(0.95 0.02 315);
+    --color-purple-200: oklch(0.88 0.05 315);
+    --color-purple-300: oklch(0.78 0.1 315);
+    --color-purple-400: oklch(0.68 0.16 315);
+    --color-purple-500: oklch(0.58 0.2 315);
+    --color-purple-600: oklch(0.48 0.18 315);
+    --color-purple-700: oklch(0.38 0.15 315);
+    --color-purple-800: oklch(0.32 0.13 315);
+    --color-purple-900: oklch(0.26 0.11 315);
+    --color-purple-950: oklch(0.18 0.08 315);
 
     /* Body Purple Scale (#170220 is ~950) */
     --color-secondary-50: #FDFBFE;

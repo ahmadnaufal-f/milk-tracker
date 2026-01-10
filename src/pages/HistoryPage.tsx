@@ -1,35 +1,29 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import TrackerList from '@/components/TrackerList';
+import React, { useEffect, useState } from 'react';
+import TrackerListCard from '@/components/TrackerListCard';
+import MonthlySummaryCard from '@/components/MonthlySummaryCard';
+import DateSelectorCard from '@/components/DateSelectorCard';
+import BasePage from '@/components/BasePage';
 
 const HistoryPage: React.FC = () => {
-    const navigate = useNavigate();
-    const [date, setDate] = useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date>(new Date());
+  const [month, setMonth] = useState<Date>(new Date());
 
-    return (
-        <div className="min-h-screen bg-background flex flex-col items-center p-6 relative overflow-hidden">
-            {/* Header */}
-            <header className="w-full max-w-md flex justify-between items-center mb-4 z-10">
-                <div className="flex items-center space-x-3">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/tracker')}>
-                        <ArrowLeft className="w-6 h-6" />
-                    </Button>
-                    <div className="flex flex-col">
-                        <h1 className="text-2xl font-bold bg-clip-text text-purple-900">
-                            History
-                        </h1>
-                    </div>
-                </div>
-            </header>
+  useEffect(() => {
+    const currMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    if (currMonth.getTime() !== month.getTime()) {
+      setMonth(currMonth);
+    }
+  }, [date, month]);
 
-            {/* Main Content */}
-            <main className="w-full max-w-md z-10 flex-1 pb-8">
-                <TrackerList date={date} showViewMore={false} onDateChange={setDate} />
-            </main>
-        </div>
-    );
+  return (
+    <BasePage showBackButton={true} pageTitle="History">
+      <main className="w-full max-w-md z-10 flex-1 pb-8 flex flex-col gap-4">
+        <DateSelectorCard date={date} onDateChange={setDate} />
+        <TrackerListCard date={date} showViewMore={false} onDateChange={setDate} title="Daily Log" />
+        <MonthlySummaryCard date={month} />
+      </main>
+    </BasePage>
+  );
 };
 
 export default HistoryPage;
