@@ -34,6 +34,22 @@ const PumpingTimer: React.FC = () => {
   const [isRestoredSession, setIsRestoredSession] = useState(false);
   const [todayTotal, setTodayTotal] = useState(0);
   const [motivationText, setMotivationText] = useState('');
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Detect keyboard visibility using visualViewport
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const handleResize = () => {
+      // If viewport height is significantly smaller than window height, keyboard is likely open
+      const heightDiff = window.innerHeight - viewport.height;
+      setIsKeyboardVisible(heightDiff > 150);
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    return () => viewport.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     // Check for unsaved session first
@@ -272,7 +288,7 @@ const PumpingTimer: React.FC = () => {
       </Card>
 
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className={`sm:max-w-md ${isKeyboardVisible ? 'top-[35%]' : ''}`}>
           <DialogHeader>
             <DialogTitle>{isRestoredSession ? 'You have unsaved session' : 'Great Job Mama!'}</DialogTitle>
             <div className="flex items-center gap-2 w-full justify-center p-2">
