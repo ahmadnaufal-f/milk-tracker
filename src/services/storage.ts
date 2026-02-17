@@ -20,6 +20,7 @@ const getUserDocument = (userId: string) => doc(db, 'users', userId);
 export interface UserSettings {
     targetVolume?: string;
     targetDuration?: string;
+    reminderHours?: string;
 }
 
 export const saveUserSettings = async (userId: string, settings: UserSettings) => {

@@ -40,4 +40,4 @@ if (import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
   });
 }
 
-export { db, auth, googleProvider };
+export { app, db, auth, googleProvider };

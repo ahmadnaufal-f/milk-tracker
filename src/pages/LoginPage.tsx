@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import BasePage from '@/components/BasePage';
+import TutorialDialog from '@/components/TutorialDialog';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +29,8 @@ const LoginPage: React.FC = () => {
       console.error("Error signing in", error);
     }
   };
+
+  const [showTutorial, setShowTutorial] = useState(false);
 
   if (loading) {
     return (
@@ -74,8 +77,18 @@ const LoginPage: React.FC = () => {
             </svg>
             Continue with Google
           </Button>
+
+          <Button
+            onClick={() => setShowTutorial(true)}
+            variant="ghost"
+            className="w-full mt-4 text-muted-foreground hover:text-foreground"
+          >
+            How to Use
+          </Button>
         </CardContent>
       </Card>
+
+      <TutorialDialog open={showTutorial} onOpenChange={setShowTutorial} />
     </BasePage>
   );
 };

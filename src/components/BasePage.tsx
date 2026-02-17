@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Settings, LogOut, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Settings, LogOut, User as UserIcon, BookOpen } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { auth } from '@/firebase';
 import { signOut, User } from 'firebase/auth';
+import TutorialDialog from './TutorialDialog';
 
 interface BasePageProps {
   children: React.ReactNode;
@@ -41,6 +42,20 @@ const BasePage: React.FC<BasePageProps> = ({
     }
   }, [showAvatar]);
 
+  // Request notification permission when user is logged in
+  useEffect(() => {
+    const setupNotifications = async () => {
+      if (user && showAvatar) {
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+        if (vapidKey) {
+          const { setupPushNotifications } = await import('@/services/notifications');
+          await setupPushNotifications(user.uid, vapidKey);
+        }
+      }
+    };
+    setupNotifications();
+  }, [user, showAvatar]);
+
   const handleSignOut = async () => {
     try {
       await signOut(auth);
@@ -50,6 +65,8 @@ const BasePage: React.FC<BasePageProps> = ({
   };
 
   const showHeader = showBackButton || pageTitle || showAvatar;
+
+  const [showTutorial, setShowTutorial] = useState(false);
 
   return (
     <div className={`min-h-screen flex flex-col items-center p-4 relative overflow-hidden ${className}`}>
@@ -88,6 +105,10 @@ const BasePage: React.FC<BasePageProps> = ({
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowTutorial(true)} className="cursor-pointer">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  <span>How to Use</span>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-100/10">
                   <LogOut className="mr-2 h-4 w-4 text-red-500" />
@@ -99,6 +120,7 @@ const BasePage: React.FC<BasePageProps> = ({
         </header>
       )}
       {children}
+      <TutorialDialog open={showTutorial} onOpenChange={setShowTutorial} />
     </div>
   );
 };

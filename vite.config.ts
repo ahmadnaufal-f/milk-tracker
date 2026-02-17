@@ -16,6 +16,8 @@ export default defineConfig({
       manifest: {
         name: 'Milk Pump Tracker',
         short_name: 'PumpTracker',
+        start_url: './index.html',
+        scope: './',
         description: 'Track your pumping sessions with ease',
         theme_color: '#f3e8ff',
         background_color: '#f3e8ff',
@@ -36,6 +38,8 @@ export default defineConfig({
       workbox: {
         navigateFallback: '/index.html',
         navigateFallbackAllowlist: [new RegExp('/index.html')],
+        cleanupOutdatedCaches: true,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
       }
     })
   ],
