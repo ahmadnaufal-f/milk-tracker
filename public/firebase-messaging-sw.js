@@ -5,13 +5,16 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js');
 
 // Initialize Firebase in the service worker
+// Note: Firebase config is intentionally hardcoded here because service workers
+// run in an isolated context with no access to Vite's import.meta.env or any
+// runtime-injected globals. These are public client-side identifiers, not secrets.
 firebase.initializeApp({
-    apiKey: self.__FIREBASE_CONFIG__.apiKey,
-    authDomain: self.__FIREBASE_CONFIG__.authDomain,
-    projectId: self.__FIREBASE_CONFIG__.projectId,
-    storageBucket: self.__FIREBASE_CONFIG__.storageBucket,
-    messagingSenderId: self.__FIREBASE_CONFIG__.messagingSenderId,
-    appId: self.__FIREBASE_CONFIG__.appId,
+    apiKey: "AIzaSyBp-SvbZVQp_pyRGP1G6qZXsppKfbWLJRQ",
+    authDomain: "track-milk-pump.firebaseapp.com",
+    projectId: "track-milk-pump",
+    storageBucket: "track-milk-pump.firebasestorage.app",
+    messagingSenderId: "943832676310",
+    appId: "1:943832676310:web:443266a7f502cfabe05677",
 });
 
 const messaging = firebase.messaging();

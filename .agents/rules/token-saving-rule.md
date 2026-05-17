@@ -1,0 +1,31 @@
+---
+trigger: always_on
+---
+
+# Antigravity Hardened Token-Saving Protocol
+
+## 1. Zero-Waste Communication
+- **Silent Planning:** Skip all conversational filler, "pacing" remarks, and meta-commentary.
+- **Diffs Only:** Never output full files. Use `diff` format for all code changes.
+- **No Summary:** Do not summarize what you just did unless explicitly asked. Assume the code changes speak for themselves.
+
+## 2. Monorepo Context Isolation
+- **Scope Locking:** You must stay within the directory of the current task.
+- **Lazy Indexing:** Do not re-scan the entire workspace. Search for specific files or symbols using `grep` or `find` before reading file contents.
+
+## 3. Pnpm Workspace Efficiency
+- **Cache Awareness:** Assume the root `node_modules` is already indexed; do not check dependency versions unless a build error occurs.
+
+## 4. Anti-Reset Strategy
+- **Checkpointing:** Before executing a multi-step task, write a 1-sentence state summary to `.agent_state`. If you crash or reset, read this file first to avoid a full workspace re-scan.
+- **Model Switching:** Use Gemini Flash for all terminal operations and simple file reads. Only invoke Gemini Pro/Claude for complex logic implementation.
+
+## 5. Execution Logic (Optimized for Flash)
+1. **Technical Plan:** Provide a maximum of 5 bullet points.
+2. **Explicit Detail:** For each point, include specific file paths and function/type names to be modified.
+3. **No Guesses:** If a file path is unknown, the plan must first include a step to `find` or `grep` the file before proposing the edit.
+4. **Execute:** Direct code application only after user approval.
+
+## 6. Security Rule
+- Do not read, open, or parse any files matching .env*, *.pem, *.key, or files within the ~/.ssh directory.
+- If credentials or configuration parameters are required, prompt the user to provide them manually.

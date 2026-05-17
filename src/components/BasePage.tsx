@@ -19,6 +19,7 @@ interface BasePageProps {
   children: React.ReactNode;
   className?: string;
   showBackButton?: boolean;
+  onBack?: () => void;
   pageTitle?: string;
   showAvatar?: boolean;
 }
@@ -27,6 +28,7 @@ const BasePage: React.FC<BasePageProps> = ({
   children,
   className = '',
   showBackButton = false,
+  onBack,
   pageTitle,
   showAvatar = false,
 }) => {
@@ -74,7 +76,7 @@ const BasePage: React.FC<BasePageProps> = ({
         <header className="w-full max-w-md flex justify-between items-center mb-4 z-10">
           <div className="flex items-center space-x-3">
             {showBackButton && (
-              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <Button variant="ghost" size="icon" onClick={() => onBack ? onBack() : navigate(-1)}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             )}

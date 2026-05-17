@@ -39,7 +39,9 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
 };
 
 /**
- * Get FCM token for the current device
+ * Get FCM token for the current device.
+ * Manually registers the service worker and passes it to getToken() to avoid
+ * Firebase's built-in 10-second auto-registration timeout.
  */
 export const getFCMToken = async (vapidKey: string): Promise<string | null> => {
     if (!messaging) {
@@ -51,8 +53,21 @@ export const getFCMToken = async (vapidKey: string): Promise<string | null> => {
         return null;
     }
 
+    if (!("serviceWorker" in navigator)) {
+        console.error("Service workers are not supported in this browser");
+        return null;
+    }
+
     try {
-        const token = await getToken(messaging, { vapidKey });
+        // Register the SW (idempotent — returns existing registration if already registered).
+        await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
+
+        // navigator.serviceWorker.ready resolves only when a SW is fully *activated* in
+        // this scope. This is critical: register() returns while the SW is still
+        // "installing", and PushManager refuses to subscribe until it reaches "activated".
+        const swRegistration = await navigator.serviceWorker.ready;
+
+        const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swRegistration });
         console.log("FCM Token:", token);
         return token;
     } catch (error) {

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { auth, googleProvider } from '../firebase';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { auth, googleProvider, db } from '../firebase';
 import { signInWithPopup, signOut, User } from 'firebase/auth';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,13 +11,29 @@ import { LogOut } from 'lucide-react';
 import BasePage from '@/components/BasePage';
 
 import { saveUserSettings, subscribeToSettings } from '@/services/storage';
+import ToggleSwitch from '@/components/ui/toggle-switch';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
+const AI_CONTEXT_FIRST_RUN_KEY = 'ai_summarization_first_run_done';
 
 const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const [user, setUser] = useState<User | null>(null);
+  const [isShaking, setIsShaking] = useState(location.state?.highlight === 'ai-summary');
   const [targetVolume, setTargetVolume] = useState('100');
   const [targetDuration, setTargetDuration] = useState('15');
   const [reminderHours, setReminderHours] = useState('4');
   const [saving, setSaving] = useState(false);
+  const [aiSummarizationEnabled, setAiSummarizationEnabled] = useState(false);
+  const [showAiDialog, setShowAiDialog] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = auth.onAuthStateChanged((u) => {
@@ -25,11 +43,21 @@ const SettingsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (isShaking) {
+      const timer = setTimeout(() => setIsShaking(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isShaking]);
+
+  useEffect(() => {
     if (user) {
       const unsubscribeSettings = subscribeToSettings(user.uid, (settings) => {
         if (settings.targetVolume) setTargetVolume(settings.targetVolume);
         if (settings.targetDuration) setTargetDuration(settings.targetDuration);
         if (settings.reminderHours) setReminderHours(settings.reminderHours);
+        if (settings.aiContext !== undefined) {
+          setAiSummarizationEnabled(settings.aiContext.enabled);
+        }
       });
       return () => unsubscribeSettings();
     }
@@ -64,6 +92,100 @@ const SettingsPage: React.FC = () => {
     } catch (error) {
       console.error("Failed to save settings", error);
       alert('Failed to save settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAiSummarizationToggle = async (enabled: boolean) => {
+    if (!user) return;
+
+    // On first enable, show the dialog instead of proceeding immediately
+    if (enabled && !localStorage.getItem(AI_CONTEXT_FIRST_RUN_KEY)) {
+      setShowAiDialog(true);
+      return;
+    }
+
+    setAiSummarizationEnabled(enabled);
+    try {
+      await saveUserSettings(user.uid, {
+        aiContext: { enabled },
+      });
+    } catch (error) {
+      console.error("Failed to save AI summarization setting", error);
+      // Revert optimistic update on failure
+      setAiSummarizationEnabled(!enabled);
+    }
+  };
+
+  const handleAiSummarizationItemClick = () => {
+    if (aiSummarizationEnabled && localStorage.getItem(AI_CONTEXT_FIRST_RUN_KEY)) {
+      navigate('/settings/ai-context');
+    } else {
+      setShowAiDialog(true);
+    }
+  };
+
+  const handleConfirmAiEnable = async () => {
+    if (!user) return;
+    setShowAiDialog(false);
+    setAiSummarizationEnabled(true);
+    try {
+      await saveUserSettings(user.uid, {
+        aiContext: { enabled: true },
+      });
+      localStorage.setItem(AI_CONTEXT_FIRST_RUN_KEY, 'true');
+      navigate('/settings/ai-context');
+    } catch (error) {
+      console.error("Failed to save AI summarization setting", error);
+      setAiSummarizationEnabled(false);
+    }
+  };
+
+  const handlePopulateMockData = async () => {
+    if (!user) return;
+
+    setSaving(true);
+    try {
+      const sessionsRef = collection(db, 'users', user.uid, 'sessions');
+      const targetDate = new Date('2026-05-10T00:00:00Z');
+      const currentDate = new Date();
+
+      const days: Date[] = [];
+      let current = new Date(targetDate);
+      while (current <= currentDate) {
+        days.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+      }
+
+      let totalAdded = 0;
+
+      for (const day of days) {
+        for (let i = 0; i < 5; i++) {
+          const hour = Math.floor(Math.random() * 24);
+          const minute = Math.floor(Math.random() * 60);
+
+          const sessionDate = new Date(day);
+          sessionDate.setHours(hour, minute, 0, 0);
+
+          if (sessionDate > currentDate) continue;
+
+          const volume = Math.floor(Math.random() * (250 - 50 + 1)) + 50;
+          const duration = Math.floor(Math.random() * (30 - 10 + 1)) + 10;
+
+          await addDoc(sessionsRef, {
+            volume,
+            duration,
+            startedAt: sessionDate.toISOString(),
+            createdAt: Timestamp.fromDate(sessionDate)
+          });
+          totalAdded++;
+        }
+      }
+      alert(`Successfully added ${totalAdded} mock sessions!`);
+    } catch (error) {
+      console.error("Error populating data", error);
+      alert('Failed to populate mock data.');
     } finally {
       setSaving(false);
     }
@@ -164,7 +286,80 @@ const SettingsPage: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
+
+        <Card
+          className={`bg-card/50 backdrop-blur-sm border-white/10 ${isShaking ? 'animate-shake shadow-[0_0_15px_rgba(168,85,247,0.5)] border-purple-400' : ''}`}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle>AI Summarization</CardTitle>
+            <CardDescription>Personalise your AI weekly summaries.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div
+              className="flex flex-row items-center gap-3 cursor-pointer transition-all duration-200 hover:border-purple-300/40 active:scale-[0.99]"
+              onClick={handleAiSummarizationItemClick}
+            >
+              <Label className="grow">Enable AI Summarization</Label>
+              <div className="w-px h-[30px] bg-grey-700"></div>
+              <span onClick={(e) => e.stopPropagation()}>
+                <ToggleSwitch checked={aiSummarizationEnabled} onChange={(e) => handleAiSummarizationToggle(e.target.checked)} />
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {import.meta.env.DEV && (
+          <Card className="bg-card/50 backdrop-blur-sm border-white/10 mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-red-500">Developer Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={handlePopulateMockData}
+                variant="outline"
+                className="w-full border-red-500/50 hover:bg-red-500/10 text-red-500 hover:text-red-400"
+                disabled={!user || saving}
+              >
+                {saving ? "Populating..." : "Populate Mock Data"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      <Dialog open={showAiDialog} onOpenChange={setShowAiDialog}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Before we turn on AI Summaries</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground space-y-4">
+            <p>This feature sends your anonymized pumping data to an AI provider to generate your weekly summary.</p>
+            <div>
+              <p className="font-semibold text-foreground">What is shared:</p>
+              <ul className="list-disc pl-5 mt-1 space-y-1">
+                <li>Session volumes, times, and durations</li>
+                <li>Baby's age and pumping goal (if you've provided them)</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">What is never shared:</p>
+              <ul className="list-disc pl-5 mt-1 space-y-1">
+                <li>Your name, email, or any identifying information</li>
+              </ul>
+            </div>
+            <p className="text-amber-600 bg-amber-50 p-3 rounded-md text-xs font-medium border border-amber-200">
+              ⚠️ AI summaries are not medical advice. Always consult a lactation consultant or healthcare provider for guidance.
+            </p>
+            <p className="text-xs">
+              You can disable this feature at any time in Settings. Disabling AI does not affect your pump logs.
+            </p>
+          </div>
+          <DialogFooter className="flex-row justify-end space-x-2 pt-4">
+            <Button variant="ghost" onClick={() => setShowAiDialog(false)}>Cancel</Button>
+            <Button onClick={handleConfirmAiEnable} className="bg-purple-600 hover:bg-purple-700 text-white">Enable AI summarization</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </BasePage>
   );
 };
