@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { auth } from '@/firebase';
 import { Spinner } from './ui/spinner';
 import useSummarizeableCheck from '@/hooks/useSummarizeableCheck';
-import { redirect, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const PumpingInformation: React.FC = () => {
   const {
@@ -92,8 +92,8 @@ const PumpingInformation: React.FC = () => {
   return (
     <>
       <Card className="w-full mb-4 shadow-md overflow-hidden border-solid border-purple-300 bg-purple-50 py-0 rounded-3xl">
-        <div className="p-6 md:p-8 pb-8 flex flex-col items-center space-y-8">
-          <div className="w-full flex flex-row justify-items-start items-center gap-6 text-left">
+        <div className="p-4 md:p-8 flex flex-col items-center space-y-8">
+          <div className="w-full flex flex-row justify-items-start items-center gap-4 text-left">
             <div className="relative shrink-0">
               <div className="w-30 h-30 flex items-center justify-center overflow-hidden">
                 <img src="/baby.webp" alt="Baby" className="w-full h-full object-contain" />
@@ -108,7 +108,7 @@ const PumpingInformation: React.FC = () => {
               </p>
               <div>
                 {isSummarizeable ? (
-                  <button onClick={onShowAISummaryClicked} className='mt-4 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-sm px-4 py-2 rounded-lg shadow-[0_0_8px_2px_rgba(168,85,247,0.5)]'>
+                  <button onClick={onShowAISummaryClicked} className='mt-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-[14px] px-4 py-2 rounded-lg shadow-[0_0_8px_2px_rgba(168,85,247,0.5)]'>
                     ✨ Show AI Summary
                   </button>
                 ) : null}

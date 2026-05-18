@@ -17,7 +17,7 @@ const HistoryPage: React.FC = () => {
 
   return (
     <BasePage showBackButton={true} pageTitle="History">
-      <main className="w-full max-w-md z-10 flex-1 pb-8 flex flex-col gap-4">
+      <main className="w-full max-w-md z-10 flex-1 flex flex-col gap-4">
         <DateSelectorCard date={date} onDateChange={setDate} />
         <TrackerListCard date={date} showViewMore={false} onDateChange={setDate} title="Daily Log" />
         <MonthlySummaryCard date={month} />

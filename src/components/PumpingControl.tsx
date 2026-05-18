@@ -36,15 +36,15 @@ export default function PumpingControl() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 h-30 bg-linear-to-b from-background/0 to-background flex items-center justify-center">
-        <motion.div 
+      <div className="fixed bottom-0 left-0 right-0 z-50 h-24 bg-linear-to-b from-background/0 to-background flex items-center justify-center">
+        <motion.div
           layout
           transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           className="text-card-foreground border w-fit h-fit mx-auto py-3 px-6 shadow-lg overflow-hidden border-solid border-purple-300 bg-purple-50 rounded-3xl"
         >
           <AnimatePresence mode="wait">
             {isPumping ? (
-              <motion.div 
+              <motion.div
                 key="pumping"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}

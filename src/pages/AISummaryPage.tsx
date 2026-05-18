@@ -78,7 +78,7 @@ export default function AISummaryPage() {
   // ── Render Helpers ──────────────────────────────────────────────────────────
   return (
     <BasePage showBackButton onBack={() => navigate(-1)} pageTitle="">
-      <div className="w-full max-w-lg space-y-6 pb-24 mx-auto">
+      <div className="w-full max-w-lg space-y-6 mx-auto">
         {/* Header / Error */}
         <div className="flex items-center justify-between px-4">
           <div>

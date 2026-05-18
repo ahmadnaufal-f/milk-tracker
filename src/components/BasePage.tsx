@@ -122,6 +122,7 @@ const BasePage: React.FC<BasePageProps> = ({
         </header>
       )}
       {children}
+      <div className="h-16 w-full" />
       <TutorialDialog open={showTutorial} onOpenChange={setShowTutorial} />
     </div>
   );
