@@ -7,11 +7,12 @@ import OpenAI from "openai";
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const MODEL = "gpt-4o-mini";
+const MODEL = "gpt-5.4-nano";
 const MAX_TOKENS_SUMMARY = 600;
 const MAX_TOKENS_FOLLOWUP = 300;
 const MAX_FOLLOWUPS_PER_DAY = 3;
 const COOLDOWN_MS = 5 * 60 * 1000;      // 5 minutes
+const MAX_ASKED_QUESTIONS = 15;         // cap before sending to prompt
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,10 +27,12 @@ interface AnonymizedSession {
 /** Request payload for generateSummary */
 interface GenerateSummaryRequest {
   userId: string;
-  sessions: AnonymizedSession[];
+  currentWeekSessions: AnonymizedSession[];
+  previousWeekSessions: AnonymizedSession[] | null;
   babyAge: string | null;
   feedingMethod: string | null;
   pumpingGoals: string | null;
+  askedQuestions: string[];
 }
 
 /** Response payload for generateSummary */
@@ -60,6 +63,7 @@ interface SummaryCache extends DocumentData {
   lastManualRefreshAt: number;
   followUpsUsedToday: number;
   followUpsResetAt: string; // "YYYY-MM-DD"
+  askedQuestions: string[];
 }
 
 /** Parsed AI output from OpenAI JSON response */
@@ -121,9 +125,14 @@ Rules you must always follow:
 - If user provides baby birth date and the pumping method is 'exclusive' and not 'supplemental', calculate whether the user is on track to meet the WHO recommendation according to the baby's age. if not, give a gentle suggestion on how to improve.
 - The 'questions' array MUST contain 3 sample questions the user could ask YOU to dig deeper into their data or get specific advice. They must be written from the user's perspective (e.g. "Why is my volume lower in the evening?", "Is 500ml a day normal?", "How can I increase my supply?").
 
+When comparing this week's output to the previous week:
+- If this week's total volume or session frequency is lower than the previous week: acknowledge it gently, frame it as a normal fluctuation in the pumping journey. NEVER use judgmental, alarming, or discouraging language.
+- If this week's output is higher or equal to the previous week: celebrate it warmly and specifically.
+- Always lead with encouragement regardless of the comparison outcome.
+
 Output format (respond ONLY in this exact JSON structure, no markdown, no preamble):
 {
-  "summary": "2-3 warm sentences summarizing the week. Mention total volume, frequency, and one positive observation.",
+  "summary": "2-3 warm sentences summarizing the week. Mention total volume, frequency, and one positive observation. If previous week data is available, include a brief, gentle comparison.",
   "suggestions": [
     "First practical tip based on the data",
     "Second practical tip based on the data"
@@ -139,12 +148,14 @@ Output format (respond ONLY in this exact JSON structure, no markdown, no preamb
 
 /** Build the user message for summary generation. */
 function buildSummaryUserMessage({
-  sessions,
+  currentWeekSessions,
+  previousWeekSessions,
   babyAge,
   feedingMethod,
   pumpingGoals,
-}: Pick<GenerateSummaryRequest, "sessions" | "babyAge" | "feedingMethod" | "pumpingGoals"> & {
-  sessions: AnonymizedSession[];
+  askedQuestions,
+}: Pick<GenerateSummaryRequest, "currentWeekSessions" | "previousWeekSessions" | "babyAge" | "feedingMethod" | "pumpingGoals" | "askedQuestions"> & {
+  currentWeekSessions: AnonymizedSession[];
 }): string {
   const contextLines: string[] = [];
   if (babyAge) contextLines.push(`- Baby's age: ${babyAge}`);
@@ -155,9 +166,17 @@ function buildSummaryUserMessage({
     ? `User context:\n${contextLines.join("\n")}\n\n`
     : "";
 
-  const sessionBlock = formatSessionsForPrompt(sessions);
+  const currentBlock = `Pumping sessions from the last 7 days:\n${formatSessionsForPrompt(currentWeekSessions)}`;
 
-  return `${contextBlock}Pumping sessions from the last 7 days:\n${sessionBlock}\n\nPlease generate the summary.`;
+  const previousBlock = previousWeekSessions && previousWeekSessions.length > 0
+    ? `\n\nPumping sessions from the previous week (days 8–14) for comparison:\n${formatSessionsForPrompt(previousWeekSessions)}`
+    : "";
+
+  const askedBlock = askedQuestions.length > 0
+    ? `\n\nThe user has already asked the following questions before. Do not suggest them again or close variations of them:\n${askedQuestions.map((q) => `- ${q}`).join("\n")}`
+    : "";
+
+  return `${contextBlock}${currentBlock}${previousBlock}${askedBlock}\n\nPlease generate the summary.`;
 }
 
 /** Build the system prompt for follow-up answers. */
@@ -174,6 +193,7 @@ Rules:
 - Stay warm, practical, and encouraging.
 - If the question is outside your scope, gently say so and suggest consulting a lactation consultant.
 - Do not repeat the full summary back — just answer the question directly.
+- IMPORTANT: The user is interacting through a mobile app where they can ONLY tap one of the pre-generated question chips — they cannot type or submit a custom question. Never end your answer with a prompt like "feel free to ask another question", "let me know if you have more questions", or any variation that implies the user can freely type a follow-up. Your answer should feel complete and self-contained.
 `.trim();
 }
 
@@ -216,7 +236,15 @@ export const generateAiSummary = onCall<GenerateSummaryRequest, Promise<Generate
     }
 
     const callerUid = request.auth.uid;
-    const { userId, sessions, babyAge, feedingMethod, pumpingGoals } = request.data;
+    const {
+      userId,
+      currentWeekSessions,
+      previousWeekSessions,
+      babyAge,
+      feedingMethod,
+      pumpingGoals,
+      askedQuestions,
+    } = request.data;
 
     // Ensure caller can only generate their own summary
     if (callerUid !== userId) {
@@ -224,10 +252,22 @@ export const generateAiSummary = onCall<GenerateSummaryRequest, Promise<Generate
     }
 
     // ── Input validation ──────────────────────────────────────────────────────
-    const sanitized = sanitizeSessions(sessions);
-    if (sanitized.length === 0) {
+    const sanitizedCurrent = sanitizeSessions(currentWeekSessions);
+    if (sanitizedCurrent.length === 0) {
       throw new HttpsError("invalid-argument", "No valid session data provided.");
     }
+
+    // Sanitize the previous week as well, gracefully falling back to null
+    const sanitizedPrevious = previousWeekSessions && previousWeekSessions.length > 0
+      ? sanitizeSessions(previousWeekSessions)
+      : null;
+
+    // Sanitize the asked questions list — plain strings only, cap to MAX
+    const sanitizedAskedQuestions: string[] = Array.isArray(askedQuestions)
+      ? askedQuestions
+          .filter((q) => typeof q === "string" && q.trim().length > 0)
+          .slice(-MAX_ASKED_QUESTIONS)
+      : [];
 
     // ── Cooldown check (server-side) ──────────────────────────────────────────
     const cached = await readFirestoreCache(userId);
@@ -250,17 +290,19 @@ export const generateAiSummary = onCall<GenerateSummaryRequest, Promise<Generate
     try {
       const response = await openai.chat.completions.create({
         model: MODEL,
-        max_tokens: MAX_TOKENS_SUMMARY,
+        max_completion_tokens: MAX_TOKENS_SUMMARY,
         temperature: 0.7,
         messages: [
           { role: "system", content: buildSummarySystemPrompt() },
           {
             role: "user",
             content: buildSummaryUserMessage({
-              sessions,
+              currentWeekSessions: sanitizedCurrent,
+              previousWeekSessions: sanitizedPrevious,
               babyAge: babyAge ?? null,
               feedingMethod: feedingMethod ?? null,
               pumpingGoals: pumpingGoals ?? null,
+              askedQuestions: sanitizedAskedQuestions,
             }),
           },
         ],
@@ -295,6 +337,8 @@ export const generateAiSummary = onCall<GenerateSummaryRequest, Promise<Generate
         ? (cached?.followUpsUsedToday ?? 0)
         : 0,
       followUpsResetAt: todayKey(),
+      // Carry over the asked questions list — accumulates across summaries
+      askedQuestions: cached?.askedQuestions ?? [],
     };
 
     await writeFirestoreCache(userId, cachePayload);
@@ -360,7 +404,7 @@ export const answerAiFollowUp = onCall<AnswerFollowUpRequest, Promise<AnswerFoll
     try {
       const response = await openai.chat.completions.create({
         model: MODEL,
-        max_tokens: MAX_TOKENS_FOLLOWUP,
+        max_completion_tokens: MAX_TOKENS_FOLLOWUP,
         temperature: 0.7,
         messages: [
           { role: "system", content: buildFollowUpSystemPrompt() },
@@ -380,12 +424,16 @@ export const answerAiFollowUp = onCall<AnswerFollowUpRequest, Promise<AnswerFoll
       throw new HttpsError("internal", "Empty response from AI.");
     }
 
-    // ── Update rate limit counter in Firestore ────────────────────────────────
+    // ── Update rate limit counter and asked questions in Firestore ────────────
     const newUsed = usedToday + 1;
+    const existingAsked = cached?.askedQuestions ?? [];
+    const updatedAsked = [...existingAsked, question.trim()].slice(-MAX_ASKED_QUESTIONS);
+
     await summaryDocRef(userId).set(
       {
         followUpsUsedToday: newUsed,
         followUpsResetAt: today,
+        askedQuestions: updatedAsked,
       },
       { merge: true }
     );

@@ -9,7 +9,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AiLoader from '@/components/ui/ai-loading';
 import { Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 export default function AISummaryPage() {
   const navigate = useNavigate();
@@ -27,8 +26,8 @@ export default function AISummaryPage() {
   useEffect(() => {
     if (!user) return;
 
-    // Fetch last 7 days of sessions
-    const unsubSessions = subscribeToRecentSessions(user.uid, 7, setSessions);
+    // Fetch last 2 weeks and 1 day of sessions
+    const unsubSessions = subscribeToRecentSessions(user.uid, 15, setSessions);
 
     // Fetch AI Context settings
     const unsubSettings = subscribeToSettings(user.uid, (settings) => {

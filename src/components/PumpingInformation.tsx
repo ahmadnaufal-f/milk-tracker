@@ -6,6 +6,7 @@ import { auth } from '@/firebase';
 import { Spinner } from './ui/spinner';
 import useSummarizeableCheck from '@/hooks/useSummarizeableCheck';
 import { useNavigate } from 'react-router-dom';
+import { Tooltip } from '@/components/ui/tooltip';
 
 const PumpingInformation: React.FC = () => {
   const {
@@ -106,13 +107,23 @@ const PumpingInformation: React.FC = () => {
               <p className="text-sm text-purple-950">
                 {motivationText}
               </p>
-              <div>
-                {isSummarizeable ? (
-                  <button onClick={onShowAISummaryClicked} className='mt-1 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white text-[14px] px-4 py-2 rounded-lg shadow-[0_0_8px_2px_rgba(168,85,247,0.5)]'>
-                    ✨ Show AI Summary
-                  </button>
-                ) : null}
-              </div>
+              <Tooltip
+                content="You need at least 7 days of data to generate an AI summary."
+                disabled={!isSummarizeable}
+              >
+                <button
+                  onClick={isSummarizeable ? onShowAISummaryClicked : undefined}
+                  aria-disabled={!isSummarizeable}
+                  className={[
+                    'mt-1 text-white text-[14px] px-4 py-2 rounded-lg transition-all',
+                    isSummarizeable
+                      ? 'bg-purple-500 hover:bg-purple-600 active:bg-purple-700 shadow-[0_0_8px_2px_rgba(168,85,247,0.5)] cursor-pointer'
+                      : 'bg-purple-300 opacity-60 cursor-not-allowed',
+                  ].join(' ')}
+                >
+                  ✨ Show AI Summary
+                </button>
+              </Tooltip>
             </div>
           </div>
         </div>

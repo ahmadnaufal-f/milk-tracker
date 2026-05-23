@@ -7,6 +7,7 @@ import { AISummarizationContext, PumpingGoal, PumpingSession } from "@/services/
 const CACHE_KEY = "milktrack_summary_cache";
 const COOLDOWN_MS = 5 * 60 * 1000;       // 5 minutes
 const MAX_FOLLOWUPS_PER_DAY = 3;
+const MAX_ASKED_QUESTIONS = 15;           // cap to avoid bloating the prompt
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,10 +39,12 @@ interface AnonymizedSession {
  */
 interface SummaryRequestPayload {
   userId: string;
-  sessions: AnonymizedSession[];
+  currentWeekSessions: AnonymizedSession[];
+  previousWeekSessions: AnonymizedSession[] | null;
   babyAge: string | null; // e.g. "3 months old", "1 year 2 months old"
   feedingMethod: string | null; // e.g. "exclusive pumping", "supplemental pumping"
   pumpingGoals: string | null; // e.g. "building a freezer stash, returning to work"
+  askedQuestions: string[];
 }
 
 /** Response from generateSummary Firebase Function */
@@ -72,6 +75,7 @@ interface SummaryCache {
   lastManualRefreshAt: number | null; // Unix ms
   followUpsUsedToday: number;
   followUpsResetAt: string;        // "YYYY-MM-DD"
+  askedQuestions: string[];
 }
 
 /** Hook input params */
@@ -168,6 +172,60 @@ function derivePumpingGoals(pumpingGoal: PumpingGoal | undefined): string | null
   return active.length > 0 ? active.join(", ") : null;
 }
 
+// ─── Session split helper ─────────────────────────────────────────────────────
+
+/**
+ * Anonymizes a single raw PumpSession into an AnonymizedSession.
+ * Strips id and createdAt; derives date and time from startedAt.
+ */
+function anonymizeSession(s: PumpingSession): AnonymizedSession {
+  const started = new Date(s.startedAt);
+  return {
+    date: started.toISOString().slice(0, 10),  // "2026-05-17"
+    time: started.toISOString().slice(11, 16), // "02:49"
+    duration: Number(s.duration ?? 0),
+    volume: Number(s.volume ?? 0),
+    // id, createdAt intentionally omitted
+  };
+}
+
+/**
+ * Splits the full session history into current and previous week buckets.
+ *
+ * - currentWeekSessions  → sessions from the last 7 days (days 0–6)
+ * - previousWeekSessions → sessions from days 7–13, or null if unavailable
+ *
+ * "Day 0" is today (UTC). All comparisons are based on startedAt timestamps.
+ */
+function splitSessionsByWeek(sessions: PumpingSession[]): {
+  currentWeekSessions: AnonymizedSession[];
+  previousWeekSessions: AnonymizedSession[] | null;
+} {
+  const now = Date.now();
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const cutoff7 = now - 7 * DAY_MS;
+  const cutoff14 = now - 14 * DAY_MS;
+
+  const currentWeekSessions: AnonymizedSession[] = [];
+  const previousWeekSessions: AnonymizedSession[] = [];
+
+  for (const s of sessions) {
+    const ts = new Date(s.startedAt).getTime();
+    if (ts >= cutoff7) {
+      currentWeekSessions.push(anonymizeSession(s));
+    } else if (ts >= cutoff14) {
+      previousWeekSessions.push(anonymizeSession(s));
+    }
+  }
+
+  const distinctPreviousDates = new Set(previousWeekSessions.map((s) => s.date)).size;
+
+  return {
+    currentWeekSessions,
+    previousWeekSessions: distinctPreviousDates >= 7 ? previousWeekSessions : null,
+  };
+}
+
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 
 /** Read the cached summary from localStorage. Returns null if missing or expired. */
@@ -220,6 +278,8 @@ function todayKey(): string {
  *   - Exposes manual refresh (with cooldown enforcement)
  *   - Exposes follow-up question answering (with daily rate limit)
  *   - Uses localStorage as fast read layer, Firestore as source of truth
+ *   - Tracks asked questions to prevent the AI from suggesting repeats
+ *   - Splits sessions into current/previous week for two-week comparison
  */
 export function useSummarizer({
   userId,
@@ -286,26 +346,25 @@ export function useSummarizer({
   }
 
   /**
-   * Serialize only what the AI needs — no userId, no id, no PII.
-   * Derives human-readable context strings from AISummarizationContext.
+   * Builds the payload for generateSummary.
+   * - Splits sessions into current/previous week buckets
+   * - Passes the last N asked questions to prevent repeats
+   * - Derives human-readable context strings from AISummarizationContext
    */
   function buildPayload(): Omit<SummaryRequestPayload, "userId"> {
-    const anonymizedSessions: AnonymizedSession[] = sessions.map((s) => {
-      const started = new Date(s.startedAt);
-      return {
-        date: started.toISOString().slice(0, 10),  // "2026-05-17"
-        time: started.toISOString().slice(11, 16), // "02:49"
-        duration: Number(s.duration ?? 0),             // minutes
-        volume: Number(s.volume ?? 0),             // ml
-        // id, createdAt intentionally omitted
-      };
-    });
+    const { currentWeekSessions, previousWeekSessions } = splitSessionsByWeek(sessions);
+
+    // Pull asked questions from cache; cap to MAX_ASKED_QUESTIONS to keep prompt lean
+    const existingCache = readLocalCache();
+    const askedQuestions = (existingCache?.askedQuestions ?? []).slice(-MAX_ASKED_QUESTIONS);
 
     return {
-      sessions: anonymizedSessions,
+      currentWeekSessions,
+      previousWeekSessions,
       babyAge: deriveBabyAge(aiContext?.babyBirthdate),
       feedingMethod: deriveFeedingMethod(aiContext?.feedingMethod),
       pumpingGoals: derivePumpingGoals(aiContext?.pumpingGoal),
+      askedQuestions,
     };
   }
 
@@ -349,6 +408,8 @@ export function useSummarizer({
             ? (existing?.followUpsUsedToday ?? 0)
             : 0,
           followUpsResetAt: todayKey(),
+          // Carry over existing asked questions — they accumulate across summaries
+          askedQuestions: existing?.askedQuestions ?? [],
         };
 
         writeLocalCache(newCache);
@@ -398,21 +459,26 @@ export function useSummarizer({
 
         const cached = readLocalCache();
 
-        if (cached?.questions) {
-          cached.questions = cached.questions.filter(q => q !== question);
-        }
+        // Track this question so the AI won't suggest it again in the future
+        const existingAsked = cached?.askedQuestions ?? [];
+        const updatedAsked = [...existingAsked, question].slice(-MAX_ASKED_QUESTIONS);
 
-        // Update local cache counters
+        // Remove the tapped question from the suggested list
+        const updatedQuestions = (cached?.questions ?? []).filter(q => q !== question);
+
+        // Update local cache: counters, asked questions, and filtered question list
         const updatedCache: SummaryCache = {
           ...(cached ?? {} as SummaryCache),
+          questions: updatedQuestions,
           followUpsUsedToday: newUsed,
           followUpsResetAt: today,
+          askedQuestions: updatedAsked,
         };
         writeLocalCache(updatedCache);
 
         setFollowUpAnswer(answer);
         setFollowUpsUsed(newUsed);
-        setQuestions(questions => questions.filter(q => q !== question));
+        setQuestions(qs => qs.filter(q => q !== question));
 
       } catch (err) {
         const message = err instanceof Error
