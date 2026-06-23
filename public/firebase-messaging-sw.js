@@ -44,14 +44,14 @@ self.addEventListener('notificationclick', (event) => {
     console.log('[firebase-messaging-sw.js] Notification click:', event.action);
     event.notification.close();
 
-    const urlToOpen = 'https://pump.a-naufal.dev/';
+    const urlToOpen = self.location.origin + '/';
 
     if (event.action === 'open' || !event.action) {
         event.waitUntil(
             clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
                 // Check if the app is already open
                 for (const client of clientList) {
-                    if (client.url.includes('pump.a-naufal.dev') && 'focus' in client) {
+                    if (client.url.startsWith(self.location.origin) && 'focus' in client) {
                         return client.focus();
                     }
                 }
