@@ -1,5 +1,8 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { defineString } from "firebase-functions/v2/params";
 import * as admin from "firebase-admin";
+
+const appUrl = defineString("APP_URL");
 
 /**
  * Scheduled function that runs every 5 minutes to send due notifications.
@@ -69,7 +72,7 @@ export const sendDueNotifications = onSchedule(
                 requireInteraction: true,
               },
               fcmOptions: {
-                link: "https://pump.a-naufal.dev/",
+                link: appUrl.value(),
               },
             },
           });

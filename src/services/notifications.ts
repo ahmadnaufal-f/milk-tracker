@@ -68,7 +68,6 @@ export const getFCMToken = async (vapidKey: string): Promise<string | null> => {
         const swRegistration = await navigator.serviceWorker.ready;
 
         const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swRegistration });
-        console.log("FCM Token:", token);
         return token;
     } catch (error) {
         console.error("Failed to get FCM token:", error);
