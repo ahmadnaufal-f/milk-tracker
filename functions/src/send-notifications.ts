@@ -1,5 +1,5 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { defineString } from "firebase-functions/v2/params";
+import { defineString } from "firebase-functions/params";
 import * as admin from "firebase-admin";
 
 const appUrl = defineString("APP_URL");
