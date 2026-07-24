@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogOut } from 'lucide-react';
+import { LogOut, ShieldCheck, ChevronRight } from 'lucide-react';
 import BasePage from '@/components/BasePage';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveUserSettings, subscribeToSettings } from '@/services/storage';
@@ -334,6 +334,23 @@ const SettingsPage: React.FC = () => {
               <span onClick={(e) => e.stopPropagation()}>
                 <ToggleSwitch checked={aiSummarizationEnabled} onChange={(e) => handleAiSummarizationToggle(e.target.checked)} />
               </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
+          <CardHeader className="pb-2">
+            <CardTitle>About</CardTitle>
+            <CardDescription>Legal and privacy information.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="flex flex-row items-center gap-3 cursor-pointer transition-all duration-200 active:scale-[0.99]"
+              onClick={() => navigate('/privacy')}
+            >
+              <ShieldCheck className="size-5 text-muted-foreground" />
+              <Label className="grow cursor-pointer">Privacy Notice</Label>
+              <ChevronRight className="size-5 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>

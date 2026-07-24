@@ -104,6 +104,13 @@ const LoginPage: React.FC = () => {
         </CardContent>
       </Card>
 
+      <button
+        onClick={() => navigate('/privacy')}
+        className="mt-6 text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+      >
+        Privacy Notice
+      </button>
+
       <TutorialDialog open={showTutorial} onOpenChange={setShowTutorial} />
     </BasePage>
   );
