@@ -380,7 +380,7 @@ const SettingsPage: React.FC = () => {
             <DialogTitle>Before we turn on AI Summaries</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground space-y-4">
-            <p>This feature sends your anonymized pumping data to an AI provider to generate your weekly summary.</p>
+            <p>This feature sends your de-identified pumping data (without your name or email) to an AI provider to generate your weekly summary.</p>
             <div>
               <p className="font-semibold text-foreground">What is shared:</p>
               <ul className="list-disc pl-5 mt-1 space-y-1">
