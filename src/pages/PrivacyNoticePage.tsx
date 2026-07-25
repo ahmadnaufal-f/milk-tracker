@@ -32,7 +32,7 @@ const PrivacyNoticePage: React.FC = () => {
         <div
           className="rounded-2xl p-4 flex items-start gap-3"
           style={{
-            background: 'linear-gradient(135deg, var(--color-purple-100), var(--color-tertiary-200))',
+            background: 'var(--color-purple-100)',
             border: '1px solid var(--color-purple-200)',
           }}
         >
@@ -53,7 +53,7 @@ const PrivacyNoticePage: React.FC = () => {
                 role="group"
                 aria-label="Select language"
                 className="flex shrink-0 rounded-lg overflow-hidden"
-                style={{ border: '1px solid var(--color-purple-300)' }}
+                style={{ border: '1px solid var(--color-purple-300)', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)' }}
               >
                 {LANGUAGES.map(({ code, label }) => {
                   const active = locale === code;
