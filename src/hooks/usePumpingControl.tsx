@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { addSession } from '@/services/storage';
+import { addSession, updateLastActive } from '@/services/storage';
 import { auth } from '@/firebase';
 
 interface UnsavedSession {
@@ -127,6 +127,11 @@ export function PumpingProvider({ children }: { children: ReactNode }) {
         duration: durationMinutes,
         startedAt: startTime.toISOString()
       });
+
+      // Keep lastActive fresh for anonymous-user cleanup eligibility
+      if (user.isAnonymous) {
+        await updateLastActive(user.uid);
+      }
 
       // Remove unsaved session from localStorage after successful save
       localStorage.removeItem('unsavedSession');

@@ -222,7 +222,7 @@ function splitSessionsByWeek(sessions: PumpingSession[]): {
 
   return {
     currentWeekSessions,
-    previousWeekSessions: distinctPreviousDates >= 7 ? previousWeekSessions : null,
+    previousWeekSessions: distinctPreviousDates > 0 ? previousWeekSessions : null,
   };
 }
 
@@ -302,7 +302,7 @@ export function useSummarizer({
   const [questions, setQuestions] = useState<string[]>([]);
   const [followUpAnswer, setFollowUpAnswer] = useState<string | null>(null);
   const [followUpsUsed, setFollowUpsUsed] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [followUpLoading, setFollowUpLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
@@ -314,6 +314,7 @@ export function useSummarizer({
 
     const cache = readLocalCache();
     if (cache) applyCache(cache);
+    setLoading(false);
   }, [aiEnabled]);
 
   // ── Auto-fetch if cache is stale ──────────────────────────────────────────

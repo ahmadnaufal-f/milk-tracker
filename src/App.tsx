@@ -8,10 +8,12 @@ import AISummarizationContextPage from './pages/AISummarizationContextPage';
 import ProtectedRoute from '@/pages/ProtectedRoute';
 import PumpingControl from '@/components/PumpingControl';
 import AISummaryPage from './pages/AISummaryPage';
+import GuestBanner from '@/components/GuestBanner';
 
 function MainLayout() {
   return (
     <>
+      <GuestBanner />
       <Outlet />
       <PumpingControl />
     </>

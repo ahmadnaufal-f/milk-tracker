@@ -10,6 +10,7 @@ import {
   FieldValue,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc
 } from "firebase/firestore";
 
@@ -38,6 +39,26 @@ export interface UserSettings {
   reminderHours?: string;
   aiContext?: AISummarizationContext;
 }
+
+export const initAnonymousUserDoc = async (userId: string) => {
+  try {
+    await setDoc(getUserDocument(userId), {
+      isAnonymous: true,
+      createdAt: serverTimestamp(),
+      lastActive: serverTimestamp(),
+    }, { merge: true });
+  } catch (e) {
+    console.error('Error initialising anonymous user doc:', e);
+  }
+};
+
+export const updateLastActive = async (userId: string) => {
+  try {
+    await updateDoc(getUserDocument(userId), { lastActive: serverTimestamp() });
+  } catch (e) {
+    console.error('Error updating lastActive:', e);
+  }
+};
 
 export const saveUserSettings = async (userId: string, settings: UserSettings) => {
   try {
