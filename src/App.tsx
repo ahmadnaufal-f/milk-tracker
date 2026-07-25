@@ -8,12 +8,13 @@ import AISummarizationContextPage from './pages/AISummarizationContextPage';
 import ProtectedRoute from '@/pages/ProtectedRoute';
 import PumpingControl from '@/components/PumpingControl';
 import AISummaryPage from './pages/AISummaryPage';
-import GuestBanner from '@/components/GuestBanner';
+import AppBanner from '@/components/Banner';
+import PrivacyNoticePage from './pages/PrivacyNoticePage';
 
 function MainLayout() {
   return (
     <>
-      <GuestBanner />
+      <AppBanner />
       <Outlet />
       <PumpingControl />
     </>
@@ -25,6 +26,7 @@ function App() {
     <PumpingProvider>
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/privacy" element={<PrivacyNoticePage />} />
         <Route element={<MainLayout />}>
           <Route
             path="/tracker"

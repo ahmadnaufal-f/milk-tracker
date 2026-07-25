@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogOut } from 'lucide-react';
+import { LogOut, ShieldCheck, ChevronRight } from 'lucide-react';
 import BasePage from '@/components/BasePage';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveUserSettings, subscribeToSettings } from '@/services/storage';
@@ -338,6 +338,23 @@ const SettingsPage: React.FC = () => {
           </CardContent>
         </Card>
 
+        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
+          <CardHeader className="pb-2">
+            <CardTitle>About</CardTitle>
+            <CardDescription>Legal and privacy information.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="flex flex-row items-center gap-3 cursor-pointer transition-all duration-200 active:scale-[0.99]"
+              onClick={() => navigate('/privacy')}
+            >
+              <ShieldCheck className="size-5 text-muted-foreground" />
+              <Label className="grow cursor-pointer">Privacy Notice</Label>
+              <ChevronRight className="size-5 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
         {import.meta.env.DEV && (
           <Card className="bg-card/50 backdrop-blur-sm border-white/10 mt-6">
             <CardHeader className="pb-2">
@@ -363,7 +380,7 @@ const SettingsPage: React.FC = () => {
             <DialogTitle>Before we turn on AI Summaries</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground space-y-4">
-            <p>This feature sends your anonymized pumping data to an AI provider to generate your weekly summary.</p>
+            <p>This feature sends your de-identified pumping data (without your name or email) to an AI provider to generate your weekly summary.</p>
             <div>
               <p className="font-semibold text-foreground">What is shared:</p>
               <ul className="list-disc pl-5 mt-1 space-y-1">
