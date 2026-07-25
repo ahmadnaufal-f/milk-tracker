@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PumpingSession, subscribeToSessions, subscribeToSettings } from '@/services/storage';
 import usePumpingControl from '@/hooks/usePumpingControl';
 import { Card } from '@/components/ui/card';
-import { auth } from '@/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Spinner } from './ui/spinner';
 import useSummarizeableCheck from '@/hooks/useSummarizeableCheck';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,7 @@ const PumpingInformation: React.FC = () => {
   } = usePumpingControl();
 
   const navigate = useNavigate();
+  const { user, isAnonymous } = useAuth();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [todayTotal, setTodayTotal] = useState(0);
   const [motivationText, setMotivationText] = useState('');
@@ -24,7 +25,6 @@ const PumpingInformation: React.FC = () => {
   const { isSummarizeable } = useSummarizeableCheck(sessions);
 
   useEffect(() => {
-    const user = auth.currentUser;
     if (user) {
       let settingsLoaded = false;
       let sessionsLoaded = false;
@@ -64,7 +64,7 @@ const PumpingInformation: React.FC = () => {
     } else {
       setIsInitialLoading(false);
     }
-  }, [auth.currentUser]);
+  }, [user]);
 
   useEffect(() => {
     const text = isPumping ? 'The love you pour into every drop is felt and cherished.' :
@@ -73,12 +73,19 @@ const PumpingInformation: React.FC = () => {
   }, [isPumping, todayTotal]);
 
   const onShowAISummaryClicked = () => {
+    if (isAnonymous) return; // gate handled by button disabled state
     if (isAISummarizationEnabled) {
       navigate("/ai-summary");
     } else {
       navigate("/settings", { state: { highlight: 'ai-summary' } });
     }
   }
+
+  // Determine if the AI Summary button should be actionable
+  const aiButtonDisabled = isAnonymous || !isSummarizeable;
+  const aiTooltipContent = isAnonymous
+    ? 'Link your Google account to unlock AI insights.'
+    : 'You need at least 7 days of data to generate an AI summary.';
 
   if (isInitialLoading) {
     return (
@@ -108,15 +115,15 @@ const PumpingInformation: React.FC = () => {
                 {motivationText}
               </p>
               <Tooltip
-                content="You need at least 7 days of data to generate an AI summary."
-                disabled={!isSummarizeable}
+                content={aiTooltipContent}
+                disabled={aiButtonDisabled}
               >
                 <button
-                  onClick={isSummarizeable ? onShowAISummaryClicked : undefined}
-                  aria-disabled={!isSummarizeable}
+                  onClick={aiButtonDisabled ? undefined : onShowAISummaryClicked}
+                  aria-disabled={aiButtonDisabled}
                   className={[
                     'mt-1 text-white text-[14px] px-4 py-2 rounded-lg transition-all',
-                    isSummarizeable
+                    !aiButtonDisabled
                       ? 'bg-purple-500 hover:bg-purple-600 active:bg-purple-700 shadow-[0_0_8px_2px_rgba(168,85,247,0.5)] cursor-pointer'
                       : 'bg-purple-300 opacity-60 cursor-not-allowed',
                   ].join(' ')}

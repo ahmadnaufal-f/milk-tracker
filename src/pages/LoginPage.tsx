@@ -1,32 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { auth, googleProvider } from '../firebase';
-import { signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { signInWithPopup, signInAnonymously } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import BasePage from '@/components/BasePage';
 import TutorialDialog from '@/components/TutorialDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { initAnonymousUserDoc } from '@/services/storage';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setLoading(false);
-      if (user) {
-        navigate('/tracker');
-      }
-    });
-    return () => unsubscribe();
-  }, [navigate]);
+  // Redirect already-authenticated users (Google or anonymous)
+  if (!loading && user) {
+    navigate('/tracker');
+  }
 
   const handleSignIn = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
+      navigate('/tracker');
     } catch (error) {
-      console.error("Error signing in", error);
+      console.error('Error signing in', error);
+    }
+  };
+
+  const handleGuestSignIn = async () => {
+    try {
+      const result = await signInAnonymously(auth);
+      await initAnonymousUserDoc(result.user.uid);
+      navigate('/tracker');
+    } catch (error) {
+      console.error('Error signing in as guest', error);
     }
   };
 
@@ -79,9 +87,17 @@ const LoginPage: React.FC = () => {
           </Button>
 
           <Button
+            onClick={handleGuestSignIn}
+            variant="ghost"
+            className="w-full mt-2 text-muted-foreground hover:text-foreground"
+          >
+            Continue without sign in
+          </Button>
+
+          <Button
             onClick={() => setShowTutorial(true)}
             variant="ghost"
-            className="w-full mt-4 text-muted-foreground hover:text-foreground"
+            className="w-full mt-2 text-muted-foreground hover:text-foreground text-xs"
           >
             How to Use
           </Button>

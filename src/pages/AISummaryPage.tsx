@@ -1,26 +1,39 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../firebase';
-import { User } from 'firebase/auth';
 import { subscribeToRecentSessions, subscribeToSettings, PumpingSession, AISummarizationContext } from '@/services/storage';
 import { useSummarizer } from '@/hooks/useAISummarizer';
+import { useAuth } from '@/contexts/AuthContext';
 import BasePage from '@/components/BasePage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AiLoader from '@/components/ui/ai-loading';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Lock } from 'lucide-react';
 
 export default function AISummaryPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isAnonymous } = useAuth();
   const [sessions, setSessions] = useState<PumpingSession[]>([]);
   const [aiContext, setAiContext] = useState<AISummarizationContext | null>(null);
 
-  // ── Auth ────────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const unsub = auth.onAuthStateChanged(setUser);
-    return unsub;
-  }, []);
+  // ── Guest Gate ──────────────────────────────────────────────────────────────
+  if (isAnonymous) {
+    return (
+      <BasePage showBackButton onBack={() => navigate(-1)} pageTitle="">
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 px-8">
+          <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center">
+            <Lock className="w-10 h-10 text-purple-400" />
+          </div>
+          <h2 className="text-xl font-bold">AI Insights Locked</h2>
+          <p className="text-sm text-muted-foreground">
+            Link your Google account to unlock AI-powered insights after 7 days of tracking.
+          </p>
+          <Button onClick={() => navigate('/tracker')} variant="outline">
+            Back to Tracker
+          </Button>
+        </div>
+      </BasePage>
+    );
+  }
 
   // ── Data Fetching ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -64,6 +77,20 @@ export default function AISummaryPage() {
 
   const handleQuestionClick = (q: string) => {
     answerFollowUp(q);
+  };
+
+  const renderInlineMarkdown = (text: string) => {
+    // Split on **bold** or *italic* tokens
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('*') && part.endsWith('*')) {
+        return <em key={i}>{part.slice(1, -1)}</em>;
+      }
+      return part;
+    });
   };
 
   const formatSummary = (text: string) => {
@@ -178,7 +205,9 @@ export default function AISummaryPage() {
                       AI Reply
                     </div>
                     <p className="text-sm text-indigo-900 leading-relaxed mt-2 m-0 whitespace-pre-wrap">
-                      {followUpAnswer}
+                      {followUpAnswer.split('\n').map((line, i, arr) => (
+                        <span key={i}>{renderInlineMarkdown(line)}{i < arr.length - 1 && <br />}</span>
+                      ))}
                     </p>
                   </div>
                 )}
