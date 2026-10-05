@@ -1,5 +1,6 @@
-import { Routes, Route, Outlet } from 'react-router-dom';
+import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { PumpingProvider } from '@/hooks/usePumpingControl';
+import { useAuth } from '@/contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import TrackerPage from './pages/TrackerPage';
 import HistoryPage from './pages/HistoryPage';
@@ -10,13 +11,24 @@ import PumpingControl from '@/components/PumpingControl';
 import AISummaryPage from './pages/AISummaryPage';
 import AppBanner from '@/components/Banner';
 import PrivacyNoticePage from './pages/PrivacyNoticePage';
+import DomainMigrationPage from './pages/DomainMigrationPage';
+import PwaUpdateNotice from '@/components/PwaUpdateNotice';
 
 function MainLayout() {
   return (
     <>
-      <AppBanner />
       <Outlet />
       <PumpingControl />
+    </>
+  );
+}
+
+function MigrationLayout() {
+  const { user } = useAuth();
+  return (
+    <>
+      <DomainMigrationPage />
+      {user && <PumpingControl />}
     </>
   );
 }
@@ -24,9 +36,13 @@ function MainLayout() {
 function App() {
   return (
     <PumpingProvider>
+      <PwaUpdateNotice />
+      <AppBanner />
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/index.html" element={<Navigate to="/" replace />} />
         <Route path="/privacy" element={<PrivacyNoticePage />} />
+        <Route path="/migration" element={<MigrationLayout />} />
         <Route element={<MainLayout />}>
           <Route
             path="/tracker"

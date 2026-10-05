@@ -36,4 +36,12 @@ Agar lebih praktis diakses seperti aplikasi biasa tanpa buka browser:
 
 ---
 
+### 5. Jika Milk Tracker menampilkan pemberitahuan pindah
+* Selesaikan dan simpan sesi Anda sebelum melanjutkan.
+* Jika Anda menggunakan akun tamu, pilih **"Pindahkan data tamu saya"** dan jaga tautan pribadi yang berlaku singkat itu. Anda tidak memerlukan akun Google.
+* Jika Anda menggunakan Google, buka situs baru dan masuk dengan akun Google yang sama.
+* Periksa riwayat dan pengaturan di situs baru sebelum menghapus aplikasi lama. Tambahkan situs baru ke layar utama lagi; pengingat mungkin perlu diaktifkan kembali.
+
+---
+
 *Semoga sesi memompa Anda menyenangkan dan lancar!*

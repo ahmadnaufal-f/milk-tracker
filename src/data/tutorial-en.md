@@ -36,4 +36,12 @@ For more practical access like a regular application without opening a browser:
 
 ---
 
+### 5. If Milk Tracker shows a move notice
+* Finish and save your current session before continuing.
+* If you use a guest account, choose **"Move my guest data"** and keep the private, short-lived link to yourself. You do not need a Google account for this.
+* If you use Google, open the new site and sign in with the same Google account.
+* Check your history and settings on the new site before removing the old app. Add the new site to your home screen again; reminders may need to be enabled there.
+
+---
+
 *Hope your pumping session is pleasant and smooth!*

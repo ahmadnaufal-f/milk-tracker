@@ -3,6 +3,7 @@ import * as admin from "firebase-admin";
 // [DISABLED] import { sendDueNotifications } from "./send-notifications";
 import { generateAiSummary, answerAiFollowUp } from "./ai-summarizer";
 import { cleanupAnonymousUsers } from "./cleanup-anonymous-users";
+import { createGuestMigration, redeemGuestMigration, confirmGuestMigration } from "./guest-migration";
 
 // Initialize Firebase Admin (only once)
 admin.initializeApp();
@@ -14,4 +15,7 @@ export {
   generateAiSummary,
   answerAiFollowUp,
   cleanupAnonymousUsers,
+  createGuestMigration,
+  redeemGuestMigration,
+  confirmGuestMigration,
 };
