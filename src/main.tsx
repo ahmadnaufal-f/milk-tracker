@@ -5,6 +5,8 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
 import './index.css'
 import App from './App'
+import { registerAppUpdates } from '@/services/pwaUpdates'
+import { isStandalonePwa } from '@/lib/pwa'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,8 +19,10 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
+registerAppUpdates();
+
 // reload page if the root element is empty after a short delay
-const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+const isPWA = isStandalonePwa();
 
 if (isPWA) {
   setTimeout(() => {

@@ -1,0 +1,72 @@
+name: Firebase Hosting preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+concurrency:
+  group: firebase-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_preview:
+    # Forks do not receive this project's deployment credential.
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Public web configuration from this project's Hosting init endpoint.
+      VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY || 'AIzaSyBp-SvbZVQp_pyRGP1G6qZXsppKfbWLJRQ' }}
+      VITE_FIREBASE_AUTH_DOMAIN: track-milk-pump.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: track-milk-pump
+      VITE_FIREBASE_STORAGE_BUCKET: track-milk-pump.firebasestorage.app
+      VITE_FIREBASE_MESSAGING_SENDER_ID: '943832676310'
+      VITE_FIREBASE_APP_ID: '1:943832676310:web:443266a7f502cfabe05677'
+      VITE_RECAPTCHA_SITE_KEY: ${{ vars.VITE_RECAPTCHA_SITE_KEY }}
+      VITE_FIREBASE_VAPID_KEY: ${{ vars.VITE_FIREBASE_VAPID_KEY }}
+      # Preview URLs must not pretend to be the old or new migration origin.
+      VITE_DOMAIN_MIGRATION_ENABLED: 'false'
+      VITE_DOMAIN_MIGRATION_READY: 'false'
+
+    steps:
+      - name: Check Firebase deployment credential
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TRACK_MILK_PUMP }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo '::error::Add FIREBASE_SERVICE_ACCOUNT_TRACK_MILK_PUMP in repository Settings > Secrets and variables > Actions. See docs/firebase-hosting-previews.md.'
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build preview
+        run: pnpm build
+
+      - name: Deploy preview and comment on PR
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TRACK_MILK_PUMP }}
+          projectId: track-milk-pump
+          channelId: pr-${{ github.event.pull_request.number }}
+          expires: 7d
+          firebaseToolsVersion: 15.32.1

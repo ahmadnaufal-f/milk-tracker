@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install frontend and test dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Cloud Functions dependencies
+        run: npm ci --prefix functions
+
+      - name: Run frontend and backend unit suites
+        run: pnpm test:unit
+
+      - name: Run Firebase emulator integration suite
+        run: pnpm test:integration
+
+      - name: Build frontend and Cloud Functions
+        run: pnpm build && pnpm build:functions
+
+      - name: Type-check frontend
+        run: pnpm exec tsc -b
+
+      - name: Lint
+        run: pnpm lint

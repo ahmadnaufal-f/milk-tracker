@@ -11,7 +11,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'Milk Pump Tracker',
@@ -37,7 +38,8 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
-        navigateFallbackAllowlist: [new RegExp('/index.html')],
+        navigateFallbackDenylist: [/^\/__\//],
+        importScripts: ['/firebase-messaging-handler.js'],
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
       }
