@@ -1,5 +1,7 @@
 # Test commands
 
+Use Node.js 24 for the frontend/test tooling and pinned pnpm 11.19.0. The deployed Cloud Functions runtime remains Node.js 20; the emulator uses the local Node version.
+
 Run the frontend and Cloud Functions unit suites from the repository root with:
 
 ```sh
