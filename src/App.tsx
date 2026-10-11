@@ -1,5 +1,5 @@
 import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
-import { PumpingProvider } from '@/hooks/usePumpingControl';
+import usePumpingControl, { PumpingProvider } from '@/hooks/usePumpingControl';
 import { useAuth } from '@/contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import TrackerPage from './pages/TrackerPage';
@@ -25,10 +25,11 @@ function MainLayout() {
 
 function MigrationLayout() {
   const { user } = useAuth();
+  const { isPumping, showSaveDialog } = usePumpingControl();
   return (
     <>
       <DomainMigrationPage />
-      {user && <PumpingControl />}
+      {user && (isPumping || showSaveDialog) && <PumpingControl />}
     </>
   );
 }

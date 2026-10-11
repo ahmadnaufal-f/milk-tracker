@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, signInAnonymously } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -13,11 +13,6 @@ import { initAnonymousUserDoc } from '@/services/storage';
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-
-  // Redirect already-authenticated users (Google or anonymous)
-  if (!loading && user) {
-    navigate('/tracker');
-  }
 
   const handleSignIn = async () => {
     try {
@@ -42,11 +37,16 @@ const LoginPage: React.FC = () => {
 
   if (loading) {
     return (
-      <BasePage className="justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <BasePage className="justify-center bg-linear-to-br from-background to-secondary/20">
+        <main role="status" aria-live="polite" className="flex flex-col items-center gap-3 text-center text-purple-950">
+          <Loader2 aria-hidden="true" className="h-9 w-9 text-purple-800 motion-safe:animate-spin" />
+          <p className="text-base font-medium">Checking your account…</p>
+        </main>
       </BasePage>
     );
   }
+
+  if (user) return <Navigate to="/tracker" replace />;
 
   return (
     <BasePage className="justify-center bg-linear-to-br from-background to-secondary/20">

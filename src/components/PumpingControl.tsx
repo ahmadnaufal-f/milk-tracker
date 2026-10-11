@@ -1,8 +1,9 @@
 import usePumpingControl from '@/hooks/usePumpingControl';
 import { SaveSessionDialog } from './SaveSessionDialog';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 
 export default function PumpingControl() {
+  const reduceMotion = useReducedMotion();
   const {
     isPumping,
     handleStart,
@@ -38,18 +39,18 @@ export default function PumpingControl() {
     <>
       <div className="fixed bottom-0 left-0 right-0 z-50 h-24 bg-linear-to-b from-background/0 to-background flex items-center justify-center">
         <motion.div
-          layout
-          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+          layout={!reduceMotion}
+          transition={reduceMotion ? { duration: 0 } : { type: "spring", bounce: 0.2, duration: 0.6 }}
           className="text-card-foreground border w-fit h-fit mx-auto py-3 px-6 shadow-lg overflow-hidden border-solid border-purple-300 bg-purple-50 rounded-3xl"
         >
           <AnimatePresence mode="wait">
             {isPumping ? (
               <motion.div
                 key="pumping"
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+                exit={reduceMotion ? undefined : { opacity: 0, scale: 0.95 }}
+                transition={{ duration: reduceMotion ? 0 : 0.2 }}
                 className="flex flex-row items-center gap-6"
               >
                 <div className="flex flex-col items-center">
@@ -67,7 +68,7 @@ export default function PumpingControl() {
                 <div className="h-8 w-px bg-purple-200"></div>
 
                 <button
-                  className="text-center font-semibold text-red-800 active:scale-95 transition-transform"
+                  className="text-center font-semibold text-red-800 active:scale-95 transition-transform motion-reduce:transform-none motion-reduce:transition-none"
                   onClick={handleStop}
                 >
                   Stop
@@ -76,10 +77,10 @@ export default function PumpingControl() {
             ) : (
               <motion.button
                 key="start"
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+                exit={reduceMotion ? undefined : { opacity: 0, scale: 0.95 }}
+                transition={{ duration: reduceMotion ? 0 : 0.2 }}
                 className="text-center font-semibold text-purple-800 whitespace-nowrap block"
                 onClick={handleStart}
               >

@@ -92,6 +92,23 @@ describe('prepareForDomainMigration', () => {
     expect(getDocFromServer).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['pumping_startTime', 'active-session'],
+    ['unsavedSession', 'unsaved-session'],
+  ] as const)('blocks if %s appears during the server check', async (key, reason) => {
+    let finishServerRead!: (snapshot: { metadata: { fromCache: boolean } }) => void;
+    getDocFromServer.mockImplementationOnce(() => new Promise((resolve) => {
+      finishServerRead = resolve;
+    }));
+
+    const preparation = prepareForDomainMigration('guest-1', { isPumping: false, isBusy: false });
+    await vi.waitFor(() => expect(getDocFromServer).toHaveBeenCalledOnce());
+    localStorage.setItem(key, 'started-during-server-check');
+    finishServerRead({ metadata: { fromCache: false } });
+
+    await expect(preparation).resolves.toEqual({ safe: false, reason });
+  });
+
   it('refreshes lastActive only for a server-confirmed, unlocked guest profile', async () => {
     const profileSnapshot = {
       metadata: { fromCache: false },

@@ -51,22 +51,24 @@ export function Banner({
 
   return (
     <div
-      className={`w-full border-b px-6 py-4 flex items-center justify-between gap-3 text-sm ${styles.wrapper}`}
+      className={`flex w-full flex-col gap-3 border-b px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 ${styles.wrapper}`}
     >
-      <span className={`leading-snug ${styles.text}`}>{message}</span>
+      <span className={`min-w-0 leading-snug ${styles.text}`}>{message}</span>
       {actionLabel && (
         <button
+          type="button"
           onClick={onAction}
           disabled={actionDisabled}
-          className={`shrink-0 text-xs font-semibold text-white disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors ${styles.action}`}
+          className={`min-h-11 shrink-0 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60 ${styles.action}`}
         >
           {actionLabel}
         </button>
       )}
       <button
+        type="button"
         onClick={onDismiss}
-        className={`shrink-0 transition-colors ${styles.dismiss}`}
-        aria-label="Dismiss"
+        className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center self-end rounded-lg transition-colors sm:self-auto ${styles.dismiss}`}
+        aria-label="Dismiss notice"
       >
         <X className="w-4 h-4" />
       </button>
