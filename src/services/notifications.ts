@@ -60,12 +60,16 @@ export const getFCMToken = async (vapidKey: string): Promise<string | null> => {
 
     try {
         // Register the SW (idempotent — returns existing registration if already registered).
-        await navigator.serviceWorker.register("/firebase-messaging-sw.js", { scope: "/" });
+        const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
 
         // navigator.serviceWorker.ready resolves only when a SW is fully *activated* in
         // this scope. This is critical: register() returns while the SW is still
         // "installing", and PushManager refuses to subscribe until it reaches "activated".
-        const swRegistration = await navigator.serviceWorker.ready;
+        const swRegistration = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Notification setup timed out')), 15000)),
+        ]);
+        if (swRegistration.scope !== registration.scope) return null;
 
         const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swRegistration });
         return token;

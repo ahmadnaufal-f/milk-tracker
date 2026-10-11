@@ -1,11 +1,13 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { auth, db } from '@/firebase';
-import { linkWithPopup, signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { doc, updateDoc } from 'firebase/firestore';
+import { auth, googleProvider } from '@/firebase';
+import { signInWithPopup } from 'firebase/auth';
 import { toast } from 'sonner';
+import { linkGuestAccount } from '@/services/accountLinking';
+import { isDomainMigrationActive } from '@/config/domainMigration';
+import DomainMigrationNotice from '@/components/DomainMigrationNotice';
 
 const GUEST_DISMISS_KEY = 'guestBanner_lastDismissed';
 const GUEST_DISMISS_DAYS = 7;
@@ -49,22 +51,24 @@ export function Banner({
 
   return (
     <div
-      className={`w-full border-b px-6 py-4 flex items-center justify-between gap-3 text-sm ${styles.wrapper}`}
+      className={`flex w-full flex-col gap-3 border-b px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 ${styles.wrapper}`}
     >
-      <span className={`leading-snug ${styles.text}`}>{message}</span>
+      <span className={`min-w-0 leading-snug ${styles.text}`}>{message}</span>
       {actionLabel && (
         <button
+          type="button"
           onClick={onAction}
           disabled={actionDisabled}
-          className={`shrink-0 text-xs font-semibold text-white disabled:opacity-60 px-3 py-1.5 rounded-lg transition-colors ${styles.action}`}
+          className={`min-h-11 shrink-0 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors disabled:opacity-60 ${styles.action}`}
         >
           {actionLabel}
         </button>
       )}
       <button
+        type="button"
         onClick={onDismiss}
-        className={`shrink-0 transition-colors ${styles.dismiss}`}
-        aria-label="Dismiss"
+        className={`inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center self-end rounded-lg transition-colors sm:self-auto ${styles.dismiss}`}
+        aria-label="Dismiss notice"
       >
         <X className="w-4 h-4" />
       </button>
@@ -91,42 +95,70 @@ export function GuestBanner() {
   const { user, isAnonymous } = useAuth();
   const [linking, setLinking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [collision, setCollision] = useState(false);
+  const [reauthRequired, setReauthRequired] = useState(false);
   // Self-sufficient: respects its own snooze even if rendered without AppBanner.
   const [dismissed, setDismissed] = useState(() => !isGuestBannerDue());
-
-  if (!isAnonymous || dismissed) return null;
 
   const handleLink = async () => {
     if (!user) return;
     setLinking(true);
     setMessage(null);
+    setCollision(false);
+    setReauthRequired(false);
     try {
-      const result = await linkWithPopup(user, new GoogleAuthProvider());
-      // UID is unchanged — all Firestore data is preserved automatically
-      await updateDoc(doc(db, 'users', result.user.uid), { isAnonymous: false });
-    } catch (err: any) {
-      if (err.code === 'auth/credential-already-in-use') {
-        // The Google account already has its own Milk Tracker profile.
-        // Sign in to the existing account (guest data will be cleaned up by the cron job).
-        try {
-          await signInWithCredential(auth, GoogleAuthProvider.credentialFromError(err)!);
-          setMessage('Signed in to your existing account.');
-        } catch {
-          setMessage('Could not switch accounts. Please try again.');
-        }
+      const result = await linkGuestAccount(user);
+      if (result.status === 'linked') setMessage('Your Google account is linked to these records.');
+      else if (result.status === 'reauth-required') {
+        setReauthRequired(true);
+        setMessage('Your Google account is linked. Sign in again with that same Google account to finish opening your records.');
       }
-      // auth/popup-closed-by-user → silent ignore
+      else if (result.status === 'collision') {
+        setCollision(true);
+        setMessage('This Google account already has a Milk Tracker profile. Your guest records are still here.');
+      } else if (result.status === 'error') {
+        setMessage('We could not link this account. Your guest records are still here. Please try again.');
+      }
+    } catch {
+      setMessage('We could not link this account. Your guest records are still here. Please try again.');
     } finally {
       setLinking(false);
     }
   };
 
+  const handleReauthenticate = async () => {
+    setLinking(true);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      setReauthRequired(false);
+      setMessage(null);
+    } catch {
+      setMessage('Please sign in again with the same Google account when you are ready.');
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  if ((!isAnonymous && !reauthRequired) || dismissed) return null;
+
   return (
     <Banner
       tone="amber"
-      message={message ?? 'Your data is temporary. Link your Google account to save it permanently.'}
-      actionLabel={linking ? 'Linking…' : 'Link Account'}
-      onAction={handleLink}
+      message={
+        <>
+          {message ?? 'Your data is temporary. Link a Google account if you would like to keep it.'}
+          {collision && (
+            <>
+              {' '}
+              <Link to="/migration" className="font-semibold underline underline-offset-2">
+                Move my guest data
+              </Link>
+            </>
+          )}
+        </>
+      }
+      actionLabel={linking ? (reauthRequired ? 'Signing in…' : 'Linking…') : reauthRequired ? 'Sign in again' : 'Link Account'}
+      onAction={reauthRequired ? handleReauthenticate : handleLink}
       actionDisabled={linking}
       onDismiss={() => {
         localStorage.setItem(GUEST_DISMISS_KEY, String(Date.now()));
@@ -174,14 +206,13 @@ export function PrivacyNoticeBanner() {
 
 // ── Coordinator: at most one banner at a time ────────────────────────────────
 
-type ActiveBanner = 'guest' | 'privacy' | null;
+type ActiveBanner = 'migration' | 'guest' | 'privacy' | null;
+
+const GUEST_BANNER_ROUTES = new Set(['/tracker', '/history', '/ai-summary']);
 
 /**
- * Decides which banner (if any) is shown for this launch.
- *
- * The decision is made ONCE, as soon as auth resolves, and is then frozen. That
- * is what guarantees dismissing the guest banner does not immediately reveal the
- * privacy banner — it can only take its turn on the next reload/launch.
+ * The move notice can appear on any route. Guest and privacy notices keep their
+ * original eligibility and are chosen once, when the first tracker route opens.
  */
 export default function AppBanner() {
   const { isAnonymous, loading } = useAuth();
@@ -189,13 +220,20 @@ export default function AppBanner() {
   const [active, setActive] = useState<ActiveBanner | undefined>(undefined);
 
   useEffect(() => {
-    if (loading || active !== undefined) return; // wait for auth, then decide once
+    if (isDomainMigrationActive()) {
+      setActive('migration');
+      return;
+    }
+    if (active !== undefined || loading || !GUEST_BANNER_ROUTES.has(location.pathname)) return;
     if (isAnonymous && isGuestBannerDue()) setActive('guest');
-    else if (isPrivacyBannerDue()) setActive('privacy');
+    else if (location.pathname === '/tracker' && isPrivacyBannerDue()) setActive('privacy');
     else setActive(null);
-  }, [loading, isAnonymous, active]);
+  }, [active, isAnonymous, loading, location.pathname]);
 
-  if (active === 'guest') return <GuestBanner />;
+  if (active === 'migration') {
+    return location.pathname === '/migration' ? null : <DomainMigrationNotice />;
+  }
+  if (active === 'guest' && GUEST_BANNER_ROUTES.has(location.pathname)) return <GuestBanner />;
   // The privacy notice is announced on the main tracker page only.
   if (active === 'privacy' && location.pathname === '/tracker') return <PrivacyNoticeBanner />;
   return null;

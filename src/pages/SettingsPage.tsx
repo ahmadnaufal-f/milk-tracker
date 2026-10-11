@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { auth, googleProvider, db } from '../firebase';
-import { signInWithPopup, signOut, linkWithPopup, signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
-import { collection, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
+import { auth, db, googleProvider } from '../firebase';
+import { signInWithPopup, signOut } from 'firebase/auth';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { linkGuestAccount } from '@/services/accountLinking';
+import { formatMigrationRetirementDate, getDomainMigrationConfig, isOldMigrationOrigin } from '@/config/domainMigration';
 
 const AI_CONTEXT_FIRST_RUN_KEY = 'ai_summarization_first_run_done';
 
@@ -35,6 +37,11 @@ const SettingsPage: React.FC = () => {
   const [showAiDialog, setShowAiDialog] = useState(false);
   const [linking, setLinking] = useState(false);
   const [linkMessage, setLinkMessage] = useState<string | null>(null);
+  const [linkCollision, setLinkCollision] = useState(false);
+  const [linkReauthRequired, setLinkReauthRequired] = useState(false);
+  const migrationAvailable = isOldMigrationOrigin();
+  const migrationConfig = getDomainMigrationConfig();
+  const migrationRetirementDate = formatMigrationRetirementDate(migrationConfig.retirementDate);
 
   useEffect(() => {
     if (isShaking) {
@@ -78,17 +85,25 @@ const SettingsPage: React.FC = () => {
     if (!user) return;
     setLinking(true);
     setLinkMessage(null);
+    setLinkCollision(false);
+    setLinkReauthRequired(false);
     try {
-      const result = await linkWithPopup(user, new GoogleAuthProvider());
-      await updateDoc(doc(db, 'users', result.user.uid), { isAnonymous: false });
-      setLinkMessage('Account linked successfully!');
-    } catch (err: any) {
-      if (err.code === 'auth/credential-already-in-use') {
-        await signInWithCredential(auth, GoogleAuthProvider.credentialFromError(err)!);
-        setLinkMessage('Signed in to your existing account.');
-      } else if (err.code !== 'auth/popup-closed-by-user') {
-        setLinkMessage('Could not link account. Please try again.');
+      const result = await linkGuestAccount(user);
+      if (result.status === 'linked') setLinkMessage('Your Google account is linked to these records.');
+      else if (result.status === 'reauth-required') {
+        setLinkReauthRequired(true);
+        setLinkMessage('Your Google account is linked. Sign out, then sign in again with that same Google account to finish opening your records.');
       }
+      else if (result.status === 'collision') {
+        setLinkCollision(true);
+        setLinkMessage('This Google account already has a Milk Tracker profile. Your guest records are still here.');
+      } else if (result.status === 'error') {
+        setLinkMessage('We could not link this account. Your guest records are still here. Please try again.');
+      } else {
+        setLinkMessage(null);
+      }
+    } catch {
+      setLinkMessage('We could not link this account. Your guest records are still here. Please try again.');
     } finally {
       setLinking(false);
     }
@@ -217,6 +232,14 @@ const SettingsPage: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {linkMessage && (
+              <p role="status" className="mb-3 text-sm text-center text-muted-foreground">{linkMessage}</p>
+            )}
+            {linkReauthRequired && (
+              <Button variant="outline" className="mb-3 min-h-11 w-full" onClick={handleSignOut}>
+                Sign out and sign in again
+              </Button>
+            )}
             {isAnonymous ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -224,8 +247,10 @@ const SettingsPage: React.FC = () => {
                     You're using a <span className="font-semibold">guest account</span>. Your data is stored temporarily.
                   </div>
                 </div>
-                {linkMessage && (
-                  <p className="text-sm text-center text-muted-foreground">{linkMessage}</p>
+                {linkCollision && (
+                  <Button variant="link" className="w-full text-purple-800" onClick={() => navigate('/migration')}>
+                    Move my guest data
+                  </Button>
                 )}
                 <Button
                   onClick={handleLinkAccount}
@@ -316,6 +341,26 @@ const SettingsPage: React.FC = () => {
             </Button>
           </CardContent>
         </Card>
+
+        {migrationAvailable && (
+          <Card className="bg-card/50 backdrop-blur-sm border-purple-200">
+            <CardHeader>
+              <CardTitle>Milk Tracker is moving</CardTitle>
+              <CardDescription>See your options and prepare your records before moving.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" className="min-h-11 w-full justify-between border-purple-300 text-purple-900" onClick={() => navigate('/migration')}>
+                Read about the move
+                <ChevronRight className="size-5" />
+              </Button>
+              {migrationRetirementDate && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Please move before {migrationRetirementDate}.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card
           className={`bg-card/50 backdrop-blur-sm border-white/10 ${isShaking ? 'animate-shake shadow-[0_0_15px_rgba(168,85,247,0.5)] border-purple-400' : ''}`}

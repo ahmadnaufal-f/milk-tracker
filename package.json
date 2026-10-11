@@ -8,7 +8,11 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "vite build && firebase deploy --only hosting"
+    "deploy": "vite build && firebase deploy --only hosting",
+    "test": "npm run test:unit",
+    "test:unit": "vitest run --config vitest.config.ts && npm --prefix functions run test:unit",
+    "test:integration": "npm --prefix functions run build && GUEST_MIGRATION_TEST_ENABLED=true GUEST_MIGRATION_TEST_CAMPAIGN_ID=migration-emulator-v1 GUEST_MIGRATION_TEST_SOURCE_ORIGINS=https://old.example.test GUEST_MIGRATION_TEST_DESTINATION_ORIGIN=https://pump.arkaes.dev firebase emulators:exec --project demo-milk-tracker-migration --only auth,firestore,functions --non-interactive \"vitest run --config vitest.integration.config.ts\"",
+    "build:functions": "npm --prefix functions run build"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
@@ -32,10 +36,14 @@
     "recharts": "^3.6.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "workbox-window": "^7.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "^25.0.3",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
@@ -45,7 +53,9 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "firebase-admin": "^13.6.0",
     "firebase-functions": "^7.0.3",
+    "firebase-tools": "^15.32.1",
     "globals": "^16.5.0",
+    "jsdom": "^26.1.0",
     "motion": "^12.38.0",
     "openai": "^6.38.0",
     "react-markdown": "^10.1.0",
@@ -53,15 +63,8 @@
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3",
     "vite": "npm:rolldown-vite@7.2.5",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "3.2.4"
   },
-  "pnpm": {
-    "overrides": {
-      "vite": "npm:rolldown-vite@7.2.5"
-    },
-    "onlyBuiltDependencies": [
-      "@firebase/util",
-      "protobufjs"
-    ]
-  }
+  "packageManager": "pnpm@11.19.0"
 }

@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { auth } from '@/firebase';
-import { signOut, User } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+import { useAuth } from '@/contexts/AuthContext';
+import { setupPushNotifications } from '@/services/notifications';
 import TutorialDialog from './TutorialDialog';
 
 interface BasePageProps {
@@ -33,30 +35,41 @@ const BasePage: React.FC<BasePageProps> = ({
   showAvatar = false,
 }) => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(auth.currentUser);
-
-  useEffect(() => {
-    if (showAvatar) {
-      const unsubscribe = auth.onAuthStateChanged((u) => {
-        setUser(u);
-      });
-      return () => unsubscribe();
-    }
-  }, [showAvatar]);
+  const { user, isAnonymous } = useAuth();
+  const [enablingReminders, setEnablingReminders] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState<string | null>(null);
+  const [remindersEnabled, setRemindersEnabled] = useState(() =>
+    typeof Notification !== 'undefined' && Notification.permission === 'granted');
 
   // Request notification permission when user is logged in
   useEffect(() => {
     const setupNotifications = async () => {
-      if (user && showAvatar) {
+      if (user && showAvatar && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
         if (vapidKey) {
-          const { setupPushNotifications } = await import('@/services/notifications');
           await setupPushNotifications(user.uid, vapidKey);
         }
       }
     };
     setupNotifications();
   }, [user, showAvatar]);
+
+  const enableReminders = async () => {
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+    if (!user || !vapidKey) return;
+    setEnablingReminders(true);
+    try {
+      const enabled = await setupPushNotifications(user.uid, vapidKey);
+      setRemindersEnabled(enabled);
+      setReminderMessage(enabled
+        ? 'Reminders are enabled for this app.'
+        : 'Reminders are not enabled yet. You can allow notifications in your browser settings and try again.');
+    } catch {
+      setReminderMessage("We couldn't enable reminders just now. You can try again later.");
+    } finally {
+      setEnablingReminders(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -96,7 +109,7 @@ const BasePage: React.FC<BasePageProps> = ({
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {!user?.isAnonymous && (
+                {!isAnonymous && (
                   <>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
@@ -126,6 +139,12 @@ const BasePage: React.FC<BasePageProps> = ({
         </header>
       )}
       {children}
+      {showAvatar && user && !remindersEnabled && import.meta.env.VITE_FIREBASE_VAPID_KEY && typeof Notification !== 'undefined' && (
+        <Button variant="outline" disabled={enablingReminders} onClick={() => void enableReminders()} className="mt-6 min-h-11">
+          {enablingReminders ? 'Enabling reminders…' : 'Enable reminders on this app'}
+        </Button>
+      )}
+      {reminderMessage && <p role="status" className="mt-3 max-w-md text-sm text-center text-muted-foreground">{reminderMessage}</p>}
       <div className="h-16 w-full" />
       <TutorialDialog open={showTutorial} onOpenChange={setShowTutorial} />
     </div>

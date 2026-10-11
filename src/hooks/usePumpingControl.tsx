@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { addSession, updateLastActive } from '@/services/storage';
 import { auth } from '@/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UnsavedSession {
   startedAt: string;
@@ -18,6 +19,7 @@ interface PumpingContextType {
   targetDuration: string;
   setTargetDuration: (duration: string) => void;
   loading: boolean;
+  isBusy: boolean;
   isRestoredSession: boolean;
   handleStart: () => void;
   handleStop: () => void;
@@ -28,6 +30,7 @@ interface PumpingContextType {
 const PumpingContext = createContext<PumpingContextType | null>(null);
 
 export function PumpingProvider({ children }: { children: ReactNode }) {
+  const { isGuest } = useAuth();
   const [isPumping, setIsPumping] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -129,7 +132,7 @@ export function PumpingProvider({ children }: { children: ReactNode }) {
       });
 
       // Keep lastActive fresh for anonymous-user cleanup eligibility
-      if (user.isAnonymous) {
+      if (isGuest) {
         await updateLastActive(user.uid);
       }
 
@@ -170,6 +173,7 @@ export function PumpingProvider({ children }: { children: ReactNode }) {
       targetDuration,
       setTargetDuration,
       loading,
+      isBusy: loading,
       isRestoredSession,
       handleStart,
       handleStop,
