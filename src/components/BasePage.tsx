@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Settings, LogOut, User as UserIcon, BookOpen } from 'lucide-react';
 import {
@@ -16,6 +16,7 @@ import { signOut } from 'firebase/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { setupPushNotifications } from '@/services/notifications';
 import TutorialDialog from './TutorialDialog';
+import usePumpingControl from '@/hooks/usePumpingControl';
 
 interface BasePageProps {
   children: React.ReactNode;
@@ -35,6 +36,8 @@ const BasePage: React.FC<BasePageProps> = ({
   showAvatar = false,
 }) => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { isPumping, showSaveDialog } = usePumpingControl();
   const { user, isAnonymous } = useAuth();
   const [enablingReminders, setEnablingReminders] = useState(false);
   const [reminderMessage, setReminderMessage] = useState<string | null>(null);
@@ -80,6 +83,8 @@ const BasePage: React.FC<BasePageProps> = ({
   };
 
   const showHeader = showBackButton || pageTitle || showAvatar;
+  const needsPumpingClearance = ['/tracker', '/history', '/ai-summary'].includes(pathname)
+    || (pathname === '/migration' && (isPumping || showSaveDialog));
 
   const [showTutorial, setShowTutorial] = useState(false);
 
@@ -145,7 +150,7 @@ const BasePage: React.FC<BasePageProps> = ({
         </Button>
       )}
       {reminderMessage && <p role="status" className="mt-3 max-w-md text-sm text-center text-muted-foreground">{reminderMessage}</p>}
-      <div className="h-16 w-full" />
+      <div aria-hidden="true" className={`${needsPumpingClearance ? 'h-[calc(7rem+env(safe-area-inset-bottom))]' : 'h-16'} w-full shrink-0`} />
       <TutorialDialog open={showTutorial} onOpenChange={setShowTutorial} />
     </div>
   );

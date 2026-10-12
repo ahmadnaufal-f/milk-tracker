@@ -15,29 +15,13 @@ export default function AISummaryPage() {
   const [sessions, setSessions] = useState<PumpingSession[]>([]);
   const [aiContext, setAiContext] = useState<AISummarizationContext | null>(null);
 
-  // ── Guest Gate ──────────────────────────────────────────────────────────────
-  if (isAnonymous) {
-    return (
-      <BasePage showBackButton onBack={() => navigate(-1)} pageTitle="">
-        <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 px-8">
-          <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center">
-            <Lock className="w-10 h-10 text-purple-400" />
-          </div>
-          <h2 className="text-xl font-bold">AI Insights Locked</h2>
-          <p className="text-sm text-muted-foreground">
-            Link your Google account to unlock AI-powered insights after 7 days of tracking.
-          </p>
-          <Button onClick={() => navigate('/tracker')} variant="outline">
-            Back to Tracker
-          </Button>
-        </div>
-      </BasePage>
-    );
-  }
-
   // ── Data Fetching ───────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!user) return;
+    if (!user || isAnonymous) {
+      setSessions([]);
+      setAiContext(null);
+      return;
+    }
 
     // Fetch last 2 weeks and 1 day of sessions
     const unsubSessions = subscribeToRecentSessions(user.uid, 15, setSessions);
@@ -51,7 +35,7 @@ export default function AISummaryPage() {
       unsubSessions();
       unsubSettings();
     };
-  }, [user]);
+  }, [user, isAnonymous]);
 
   // ── AI Hook ─────────────────────────────────────────────────────────────────
   const {
@@ -68,7 +52,7 @@ export default function AISummaryPage() {
     refresh,
     answerFollowUp,
   } = useSummarizer({
-    userId: user?.uid ?? null,
+    userId: isAnonymous ? null : user?.uid ?? null,
     sessions,
     aiContext,
   });
@@ -94,12 +78,34 @@ export default function AISummaryPage() {
   };
 
   const formatSummary = (text: string) => {
-    return text.split('\n').map((paragraph, index) => (
-      <p key={index} className="mb-2 last:mb-0 leading-relaxed text-sm" style={{ color: 'var(--color-body)' }}>
-        {paragraph}
+    const paragraphs = text.split(/\r?\n+/).map((paragraph) => paragraph.trim()).filter(Boolean);
+
+    return paragraphs.map((paragraph, index) => (
+      <p key={index} className="text-base leading-7 sm:text-[1.0625rem] sm:leading-8" style={{ color: 'var(--color-body)' }}>
+        {renderInlineMarkdown(paragraph)}
       </p>
     ));
   };
+
+  // ── Guest Gate ──────────────────────────────────────────────────────────────
+  if (isAnonymous) {
+    return (
+      <BasePage showBackButton onBack={() => navigate(-1)} pageTitle="">
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4 px-8">
+          <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center">
+            <Lock className="w-10 h-10 text-purple-400" />
+          </div>
+          <h2 className="text-xl font-bold">AI Insights Locked</h2>
+          <p className="text-sm text-muted-foreground">
+            Link your Google account to unlock AI-powered insights after 7 days of tracking.
+          </p>
+          <Button onClick={() => navigate('/tracker')} variant="outline">
+            Back to Tracker
+          </Button>
+        </div>
+      </BasePage>
+    );
+  }
 
   // ── Render Helpers ──────────────────────────────────────────────────────────
   return (
@@ -108,7 +114,7 @@ export default function AISummaryPage() {
         {/* Header / Error */}
         <div className="flex items-center justify-between px-4">
           <div>
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-purple-500 to-indigo-500">
+            <h1 className="text-2xl font-semibold text-purple-900">
               Weekly Insights
             </h1>
             {lastUpdatedAt && (
@@ -131,7 +137,7 @@ export default function AISummaryPage() {
             {loading ? (
               <div className="flex flex-col items-center gap-4">
                 <AiLoader />
-                <p className="text-sm font-medium animate-pulse text-purple-600">Analyzing your sessions...</p>
+                <p className="text-sm font-medium text-purple-700">Analyzing your sessions...</p>
               </div>
             ) : (
               <div className="text-center px-4 space-y-4">
@@ -146,7 +152,7 @@ export default function AISummaryPage() {
                 </div>
                 <Button
                   onClick={refresh}
-                  className="bg-purple-600 hover:bg-purple-700 text-white w-full rounded-xl py-6 text-md font-semibold mt-4 shadow-lg shadow-purple-500/20 transition-all hover:scale-[1.02]"
+                  className="bg-purple-700 hover:bg-purple-800 text-white w-full rounded-xl py-6 text-base font-semibold mt-4 shadow-sm transition-colors"
                 >
                   <Sparkles className="w-5 h-5 mr-2" />
                   Generate My Summary
@@ -157,31 +163,34 @@ export default function AISummaryPage() {
         ) : (
           <div className="space-y-6">
             {/* Main Summary */}
-            <Card className="border-purple-200/50 bg-white/60 backdrop-blur-md shadow-xl shadow-purple-900/5 overflow-hidden relative">
-              <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-purple-400 to-indigo-400" />
-              <CardContent className="pt-2 relative">
+            <Card aria-busy={loading} className="gap-0 border-purple-200 bg-white shadow-sm overflow-hidden relative">
+              <CardContent className="p-5 sm:p-6">
                 {loading && (
-                  <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
+                  <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center rounded-xl">
                     <AiLoader />
                   </div>
                 )}
-                <div className="prose prose-sm prose-purple max-w-none">
-                  {summary ? formatSummary(summary) : null}
+                <div className="mb-4 flex items-center gap-2 text-purple-800">
+                  <Sparkles aria-hidden="true" className="size-4" />
+                  <h2 className="text-base font-semibold" id="summary-key-takeaway">Key takeaway</h2>
                 </div>
+                <section aria-labelledby="summary-key-takeaway" className="space-y-4">
+                  {summary ? formatSummary(summary) : null}
+                </section>
               </CardContent>
             </Card>
 
             {/* Suggestions */}
             {suggestions.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-2 px-4">
+                <h3 className="text-base font-semibold text-purple-900 flex items-center gap-2 px-4">
                   Suggestions
                 </h3>
                 <div className="grid gap-2">
                   {suggestions.map((suggestion, i) => (
                     <div key={i} className="bg-purple-50/50 border border-purple-100 p-3 rounded-xl flex items-start gap-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 shrink-0" />
-                      <p className="text-sm text-purple-900/80 leading-relaxed m-0">{suggestion}</p>
+                      <p className="text-base text-purple-900 leading-7 m-0">{suggestion}</p>
                     </div>
                   ))}
                 </div>
@@ -191,7 +200,7 @@ export default function AISummaryPage() {
             {/* Follow up Questions */}
             {((questions.length > 0 && followUpsRemaining > 0) || (followUpAnswer || followUpLoading)) && (
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-purple-900 flex items-center gap-2 px-4">
+                <h3 className="text-base font-semibold text-purple-900 flex items-center gap-2 px-4">
                   Ask a Follow-up
                   <span className="ml-auto text-xs font-normal text-muted-foreground bg-purple-100 px-2 py-0.5 rounded-full">
                     {followUpsRemaining} remaining today
@@ -200,16 +209,10 @@ export default function AISummaryPage() {
 
                 {/* Follow-up Answer Display */}
                 {followUpAnswer && (
-                  <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 shadow-inner relative mt-4">
-                    <div className="absolute -top-2.5 left-4 bg-indigo-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      AI Reply
-                    </div>
-                    <p className="text-sm text-indigo-900 leading-relaxed mt-2 m-0 whitespace-pre-wrap">
-                      {followUpAnswer.split('\n').map((line, i, arr) => (
-                        <span key={i}>{renderInlineMarkdown(line)}{i < arr.length - 1 && <br />}</span>
-                      ))}
-                    </p>
-                  </div>
+                  <section aria-labelledby="ai-reply-heading" className="rounded-2xl border border-purple-200 bg-purple-50 p-5">
+                    <h4 id="ai-reply-heading" className="mb-4 text-base font-semibold text-purple-900">AI Reply</h4>
+                    <div className="space-y-4">{formatSummary(followUpAnswer)}</div>
+                  </section>
                 )}
 
                 {/* Suggested Questions */}
@@ -226,7 +229,7 @@ export default function AISummaryPage() {
                         key={i}
                         onClick={() => handleQuestionClick(q)}
                         disabled={followUpLoading || followUpsRemaining <= 0}
-                        className="text-xs bg-grey-50 border-purple-300 text-purple-700 border px-3 py-1.5 rounded-full transition-colors text-left"
+                        className="min-h-11 rounded-xl border border-purple-300 bg-purple-50 px-3 py-2 text-left text-sm text-purple-800 transition-colors hover:bg-purple-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
                       >
                         "{q}"
                       </button>

@@ -3,7 +3,7 @@ import { Card } from './ui/card';
 import { PumpingSession, subscribeToMonthlySessions } from '@/services/storage';
 import { auth } from '@/firebase';
 import { getDaysInMonth } from 'date-fns';
-import { Droplets, Clock, Hash } from 'lucide-react';
+import { Clock, Hash } from 'lucide-react';
 import { Spinner } from './ui/spinner';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 
@@ -68,14 +68,18 @@ const MonthlySummaryCard: React.FC<MonthlySummaryCardProps> = ({ date }) => {
 
   return (
     <Card className="w-full shadow-md overflow-hidden border-solid border-purple-300 bg-purple-50 rounded-3xl p-6">
-      <div className="flex items-center justify-center px-8">
-        <h3 className="text-lg text-center font-medium mb-2 text-purple-900 flex items-center gap-2">
-          Monthly Summary
-        </h3>
+      <div className="text-center">
+        <h3 className="text-sm font-semibold text-purple-800">Monthly total</h3>
+        <p className="mt-1 flex items-baseline justify-center gap-1.5 text-purple-950">
+          <span className="text-4xl font-bold leading-none tabular-nums tracking-tight">
+            {(totalVolume / 1000).toFixed(1)}
+          </span>
+          <span className="text-base font-semibold text-purple-800">L</span>
+        </p>
       </div>
 
       {/* Chart */}
-      <div className="w-full h-40 px-2 py-0 bg-purple-50/50 rounded-lg overflow-hidden outline-none border-none focus:outline-none **:outline-none **:border-none">
+      <div className="h-48 w-full overflow-hidden rounded-lg border-none bg-purple-50/50 px-2 py-0 outline-none focus:outline-none **:outline-none **:border-none">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={dailyData} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
             <CartesianGrid
@@ -88,7 +92,7 @@ const MonthlySummaryCard: React.FC<MonthlySummaryCardProps> = ({ date }) => {
               dataKey="day"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: 'var(--color-purple-600)' }}
+              tick={{ fontSize: 12, fill: 'var(--color-purple-700)' }}
               interval="preserveStartEnd"
               tickFormatter={(value) => (value === 1 || value === 15 || value === dailyData.length) ? value : ''}
             />
@@ -97,7 +101,7 @@ const MonthlySummaryCard: React.FC<MonthlySummaryCardProps> = ({ date }) => {
                 backgroundColor: 'white',
                 border: '1px solid #e9d5ff',
                 borderRadius: '12px',
-                fontSize: '12px',
+                fontSize: '14px',
               }}
               formatter={(value: number | undefined) => [`${value ?? 0} ml`, 'Volume']}
               labelFormatter={(label) => `Day ${label}`}
@@ -112,40 +116,24 @@ const MonthlySummaryCard: React.FC<MonthlySummaryCardProps> = ({ date }) => {
         </ResponsiveContainer>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        {/* Total Volume */}
-        <div className="flex flex-col items-center p-2 bg-purple-100/50 rounded-2xl border border-purple-100">
-          <div className="p-2 bg-white rounded-full mb-2 shadow-sm">
-            <Droplets className="w-4 h-4 text-purple-600" />
+      <div className="grid grid-cols-2 gap-3 border-t border-purple-200 pt-4">
+        <div className="flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-1.5 text-purple-800">
+            <Clock aria-hidden="true" className="size-4" />
+            <span className="text-[13px] font-semibold sm:text-sm">Daily average</span>
           </div>
-          <span className="text-xs font-semibold text-purple-600 uppercase tracking-wider text-center">Total</span>
-          <div className="flex items-baseline gap-0.5 mt-1">
-            <span className="text-xl font-bold text-purple-900">
-              {(totalVolume / 1000).toFixed(1)}
-            </span>
-            <span className="text-[10px] font-medium text-purple-600">L</span>
-          </div>
+          <p className="flex items-baseline gap-1 text-purple-950">
+            <span className="text-xl font-bold tabular-nums sm:text-2xl">{dailyAverage}</span>
+            <span className="text-xs font-semibold text-purple-800">ml</span>
+          </p>
         </div>
 
-        {/* Daily Average */}
-        <div className="flex flex-col items-center p-2 bg-purple-100/50 rounded-2xl border border-purple-100">
-          <div className="p-2 bg-white rounded-full mb-2 shadow-sm">
-            <Clock className="w-4 h-4 text-purple-600" />
+        <div className="flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-1.5 text-purple-800">
+            <Hash aria-hidden="true" className="size-4" />
+            <span className="text-[13px] font-semibold sm:text-sm">Sessions</span>
           </div>
-          <span className="text-xs font-semibold text-purple-600 uppercase tracking-wider text-center">Daily Avg</span>
-          <div className="flex items-baseline gap-0.5 mt-1">
-            <span className="text-xl font-bold text-purple-900">{dailyAverage}</span>
-            <span className="text-[10px] font-medium text-purple-600">ml</span>
-          </div>
-        </div>
-
-        {/* Session Count */}
-        <div className="flex flex-col items-center p-2 bg-purple-100/50 rounded-2xl border border-purple-100">
-          <div className="p-2 bg-white rounded-full mb-2 shadow-sm">
-            <Hash className="w-4 h-4 text-purple-600" />
-          </div>
-          <span className="text-xs font-semibold text-purple-600 uppercase tracking-wider text-center">Sessions</span>
-          <span className="text-xl font-bold text-purple-900 mt-1">{totalSessions}</span>
+          <span className="text-xl font-bold tabular-nums text-purple-950 sm:text-2xl">{totalSessions}</span>
         </div>
       </div>
     </Card>

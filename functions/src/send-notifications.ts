@@ -62,12 +62,12 @@ export const sendDueNotifications = onSchedule(
           await admin.messaging().send({
             token: fcmToken,
             notification: {
-              title: "🍼 Time to Pump!",
+              title: "Time to Pump!",
               body: reminder.message,
             },
             webpush: {
               notification: {
-                icon: "/milk-100.webp",
+                icon: "/milk-bottle.svg",
                 badge: "/milk-100.webp",
                 requireInteraction: true,
               },

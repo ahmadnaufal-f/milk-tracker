@@ -56,8 +56,8 @@ const LoginPage: React.FC = () => {
 
       <Card className="w-full max-w-sm bg-card/50 backdrop-blur-md border-white/10 shadow-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to track your liquid gold journey.</CardDescription>
+          <CardTitle className="text-2xl">Start tracking</CardTitle>
+          <CardDescription>Track your pumping sessions and see your history in one place.</CardDescription>
         </CardHeader>
         <CardContent>
           <Button

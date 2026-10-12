@@ -4,14 +4,13 @@ import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogOut, ShieldCheck, ChevronRight } from 'lucide-react';
+import ToggleSwitch from '@/components/ui/toggle-switch';
+import { LogOut, ShieldCheck, ChevronRight, TriangleAlert } from 'lucide-react';
 import BasePage from '@/components/BasePage';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveUserSettings, subscribeToSettings } from '@/services/storage';
-import ToggleSwitch from '@/components/ui/toggle-switch';
 import {
   Dialog,
   DialogContent,
@@ -223,86 +222,13 @@ const SettingsPage: React.FC = () => {
 
   return (
     <BasePage showBackButton={true} pageTitle="Settings">
-      <div className="w-full max-w-lg space-y-6">
-        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-          <CardHeader>
-            <CardTitle>Account</CardTitle>
-            <CardDescription>
-              {isAnonymous ? 'Link your Google account to keep your data.' : 'Sign in to sync your data across devices.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {linkMessage && (
-              <p role="status" className="mb-3 text-sm text-center text-muted-foreground">{linkMessage}</p>
-            )}
-            {linkReauthRequired && (
-              <Button variant="outline" className="mb-3 min-h-11 w-full" onClick={handleSignOut}>
-                Sign out and sign in again
-              </Button>
-            )}
-            {isAnonymous ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <div className="text-amber-700 text-sm leading-snug">
-                    You're using a <span className="font-semibold">guest account</span>. Your data is stored temporarily.
-                  </div>
-                </div>
-                {linkCollision && (
-                  <Button variant="link" className="w-full text-purple-800" onClick={() => navigate('/migration')}>
-                    Move my guest data
-                  </Button>
-                )}
-                <Button
-                  onClick={handleLinkAccount}
-                  disabled={linking}
-                  size="lg"
-                  className="w-full bg-white text-black hover:bg-gray-100 py-4"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  {linking ? 'Linking…' : 'Link Google Account'}
-                </Button>
-              </div>
-            ) : user ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  {user.photoURL && (
-                    <img src={user.photoURL} alt={user.displayName || "User"} className="w-10 h-10 rounded-full border border-white/20" />
-                  )}
-                  <div>
-                    <p className="font-medium">{user.displayName}</p>
-                    <p className="text-xs text-muted-foreground text-wrap whitespace-nowrap overflow-hidden max-w-[140px] truncate">{user.email}</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleSignOut}>
-                  <LogOut className="size-4 mr-1" />
-                  Sign Out
-                </Button>
-              </div>
-            ) : (
-              <Button onClick={handleSignIn} className="w-full bg-white text-black hover:bg-gray-100">
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                </svg>
-                Sign in with Google
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-          <CardHeader>
-            <CardTitle>Targets</CardTitle>
-            <CardDescription>Set your pumping goals.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <div className="w-full max-w-lg space-y-8 pb-8">
+        <section aria-labelledby="targets-heading" className="rounded-2xl border border-purple-200/80 bg-card p-5 shadow-sm sm:p-6">
+          <header className="mb-5 space-y-1.5">
+            <h2 id="targets-heading" className="text-lg font-semibold text-[var(--color-heading)]">Targets</h2>
+            <p className="text-sm text-purple-700">Set your pumping goals.</p>
+          </header>
+          <div className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="targetVolume">Target Volume (ml)</Label>
               <Input
@@ -310,7 +236,7 @@ const SettingsPage: React.FC = () => {
                 type="number"
                 value={targetVolume}
                 onChange={(e) => setTargetVolume(e.target.value)}
-                className="bg-background/50"
+                className="min-h-11 bg-background/70"
               />
             </div>
             <div className="grid gap-2">
@@ -320,7 +246,7 @@ const SettingsPage: React.FC = () => {
                 type="number"
                 value={targetDuration}
                 onChange={(e) => setTargetDuration(e.target.value)}
-                className="bg-background/50"
+                className="min-h-11 bg-background/70"
               />
             </div>
             <div className="grid gap-2">
@@ -332,90 +258,157 @@ const SettingsPage: React.FC = () => {
                 max="24"
                 value={reminderHours}
                 onChange={(e) => setReminderHours(e.target.value)}
-                className="bg-background/50"
+                className="min-h-11 bg-background/70"
               />
-              <p className="text-xs text-muted-foreground">You'll be reminded to pump again after this many hours.</p>
+              <p className="text-xs text-purple-700">You'll be reminded to pump again after this many hours.</p>
             </div>
-            <Button onClick={handleSaveConfig} className="w-full" disabled={saving}>
-              {saving ? "Saving..." : "Save Targets"}
+            <Button onClick={handleSaveConfig} className="min-h-11 w-full" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Targets'}
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
+
+        <section aria-labelledby="account-heading" className="space-y-4 border-b border-border pb-7">
+          <header className="space-y-1">
+            <h2 id="account-heading" className="text-lg font-semibold text-[var(--color-heading)]">Account</h2>
+            <p className="text-sm text-purple-700">
+              {isAnonymous ? 'Link your Google account to keep your data.' : 'Sign in to sync your data across devices.'}
+            </p>
+          </header>
+          {linkMessage && (
+            <p role="status" className="mb-3 text-sm text-center text-purple-700">{linkMessage}</p>
+          )}
+          {linkReauthRequired && (
+            <Button variant="outline" className="mb-3 min-h-11 w-full" onClick={handleSignOut}>
+              Sign out and sign in again
+            </Button>
+          )}
+          {isAnonymous ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2.5 rounded-lg bg-amber-50/80 p-3 text-amber-900">
+                <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <div className="text-sm leading-snug">
+                  You're using a <span className="font-semibold">guest account</span>. Your data is stored temporarily.
+                </div>
+              </div>
+              {linkCollision && (
+                <Button variant="link" className="min-h-11 w-full text-purple-800" onClick={() => navigate('/migration')}>
+                  Move my guest data
+                </Button>
+              )}
+              <Button
+                onClick={handleLinkAccount}
+                disabled={linking}
+                size="lg"
+                className="min-h-11 w-full bg-white py-3 text-black hover:bg-gray-100"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+                {linking ? 'Linking…' : 'Link Google Account'}
+              </Button>
+            </div>
+          ) : user ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                {user.photoURL && (
+                  <img src={user.photoURL} alt={user.displayName || "User"} className="w-10 h-10 rounded-full border border-white/20" />
+                )}
+                <div>
+                  <p className="font-medium">{user.displayName}</p>
+                  <p className="max-w-[140px] truncate text-xs text-purple-700">{user.email}</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="min-h-11" onClick={handleSignOut}>
+                <LogOut className="size-4 mr-1" />
+                Sign Out
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={handleSignIn} className="min-h-11 w-full bg-white text-black hover:bg-gray-100">
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+              </svg>
+              Sign in with Google
+            </Button>
+          )}
+        </section>
 
         {migrationAvailable && (
-          <Card className="bg-card/50 backdrop-blur-sm border-purple-200">
-            <CardHeader>
-              <CardTitle>Milk Tracker is moving</CardTitle>
-              <CardDescription>See your options and prepare your records before moving.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="outline" className="min-h-11 w-full justify-between border-purple-300 text-purple-900" onClick={() => navigate('/migration')}>
-                Read about the move
-                <ChevronRight className="size-5" />
-              </Button>
-              {migrationRetirementDate && (
-                <p className="mt-3 text-xs text-muted-foreground">
-                  Please move before {migrationRetirementDate}.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <section aria-labelledby="migration-heading" className="space-y-3 border-b border-border pb-7">
+            <header className="space-y-1">
+              <h2 id="migration-heading" className="text-base font-semibold text-[var(--color-heading)]">Milk Tracker is moving</h2>
+              <p className="text-sm text-purple-700">See your options and prepare your records before moving.</p>
+            </header>
+            <Button variant="outline" className="min-h-11 w-full justify-between border-purple-300/80 text-purple-900" onClick={() => navigate('/migration')}>
+              Read about the move
+              <ChevronRight aria-hidden="true" className="size-5" />
+            </Button>
+            {migrationRetirementDate && (
+              <p className="text-xs text-purple-700">
+                Please move before {migrationRetirementDate}.
+              </p>
+            )}
+          </section>
         )}
 
-        <Card
-          className={`bg-card/50 backdrop-blur-sm border-white/10 ${isShaking ? 'animate-shake shadow-[0_0_15px_rgba(168,85,247,0.5)] border-purple-400' : ''}`}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle>AI Summarization</CardTitle>
-            <CardDescription>Personalise your AI weekly summaries.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div
-              className="flex flex-row items-center gap-3 cursor-pointer transition-all duration-200 hover:border-purple-300/40 active:scale-[0.99]"
+        <section aria-labelledby="ai-summary-heading" className={`space-y-3 border-b border-border pb-7 ${isShaking ? 'animate-shake motion-reduce:animate-none rounded-lg ring-2 ring-purple-300/70' : ''}`}>
+          <header className="space-y-1">
+            <h2 id="ai-summary-heading" className="text-base font-semibold text-[var(--color-heading)]">AI Summarization</h2>
+            <p className="text-sm text-purple-700">Personalise your AI weekly summaries.</p>
+          </header>
+          <div className="flex min-h-14 items-center gap-3 rounded-lg">
+            <button
+              type="button"
+              className="flex min-h-11 min-w-0 flex-1 items-center justify-between gap-3 rounded-md text-left text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-purple-500)] focus-visible:ring-offset-2"
               onClick={handleAiSummarizationItemClick}
             >
-              <Label className="grow">Enable AI Summarization</Label>
-              <div className="w-px h-[30px] bg-grey-700"></div>
-              <span onClick={(e) => e.stopPropagation()}>
-                <ToggleSwitch checked={aiSummarizationEnabled} onChange={(e) => handleAiSummarizationToggle(e.target.checked)} />
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+              <span>Personalisation details</span>
+              <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-purple-700" />
+            </button>
+            <ToggleSwitch
+              id="settings-ai-summary-enabled"
+              label="Enable AI Summarization"
+              checked={aiSummarizationEnabled}
+              onChange={(event) => void handleAiSummarizationToggle(event.target.checked)}
+            />
+          </div>
+        </section>
 
-        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-          <CardHeader className="pb-2">
-            <CardTitle>About</CardTitle>
-            <CardDescription>Legal and privacy information.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              className="flex flex-row items-center gap-3 cursor-pointer transition-all duration-200 active:scale-[0.99]"
-              onClick={() => navigate('/privacy')}
-            >
-              <ShieldCheck className="size-5 text-muted-foreground" />
-              <Label className="grow cursor-pointer">Privacy Notice</Label>
-              <ChevronRight className="size-5 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
+        <section aria-labelledby="about-heading" className="space-y-2">
+          <header className="space-y-1">
+            <h2 id="about-heading" className="text-base font-semibold text-[var(--color-heading)]">About</h2>
+            <p className="text-sm text-purple-700">Legal and privacy information.</p>
+          </header>
+          <button
+            type="button"
+            className="flex min-h-12 w-full items-center gap-3 rounded-lg py-2 text-left text-sm font-medium text-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-purple-500)] focus-visible:ring-offset-2"
+            onClick={() => navigate('/privacy')}
+          >
+            <ShieldCheck aria-hidden="true" className="size-5 text-purple-700" />
+            <span className="grow">Privacy Notice</span>
+            <ChevronRight aria-hidden="true" className="size-5 text-purple-700" />
+          </button>
+        </section>
 
         {import.meta.env.DEV && (
-          <Card className="bg-card/50 backdrop-blur-sm border-white/10 mt-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-red-500">Developer Tools</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={handlePopulateMockData}
-                variant="outline"
-                className="w-full border-red-500/50 hover:bg-red-500/10 text-red-500 hover:text-red-400"
-                disabled={!user || saving}
-              >
-                {saving ? "Populating..." : "Populate Mock Data"}
-              </Button>
-            </CardContent>
-          </Card>
+          <section aria-labelledby="developer-tools-heading" className="space-y-3 border-t border-border pt-5">
+            <h2 id="developer-tools-heading" className="text-base font-semibold text-red-700">Developer Tools</h2>
+            <Button
+              onClick={handlePopulateMockData}
+              variant="outline"
+              className="min-h-11 w-full border-red-500/50 text-red-700 hover:bg-red-500/10 hover:text-red-700"
+              disabled={!user || saving}
+            >
+              {saving ? 'Populating...' : 'Populate Mock Data'}
+            </Button>
+          </section>
         )}
       </div>
 
@@ -424,7 +417,7 @@ const SettingsPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Before we turn on AI Summaries</DialogTitle>
           </DialogHeader>
-          <div className="text-sm text-muted-foreground space-y-4">
+          <div className="text-sm text-purple-700 space-y-4">
             <p>This feature sends your de-identified pumping data (without your name or email) to an AI provider to generate your weekly summary.</p>
             <div>
               <p className="font-semibold text-foreground">What is shared:</p>
@@ -439,8 +432,9 @@ const SettingsPage: React.FC = () => {
                 <li>Your name, email, or any identifying information</li>
               </ul>
             </div>
-            <p className="text-amber-600 bg-amber-50 p-3 rounded-md text-xs font-medium border border-amber-200">
-              ⚠️ AI summaries are not medical advice. Always consult a lactation consultant or healthcare provider for guidance.
+            <p className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-900">
+              <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              <span>AI summaries are not medical advice. Always consult a lactation consultant or healthcare provider for guidance.</span>
             </p>
             <p className="text-xs">
               You can disable this feature at any time in Settings. Disabling AI does not affect your pump logs.

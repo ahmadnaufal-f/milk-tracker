@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { User } from 'firebase/auth';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import ToggleSwitch from '@/components/ui/toggle-switch';
 import BasePage from '@/components/BasePage';
 import { saveUserSettings, subscribeToSettings, AISummarizationContext } from '@/services/storage';
-import { Baby, Milk, Target, CheckCircle2, Circle } from 'lucide-react';
-import ToggleSwitch from '@/components/ui/toggle-switch';
+import { Baby, Milk, Target, CheckCircle2, Circle, Sparkles } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -108,177 +108,119 @@ const AISummarizationContextPage: React.FC = () => {
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <BasePage showBackButton onBack={handleBack} pageTitle={saving ? 'Saving…' : 'AI Context'}>
-      <div className="w-full max-w-lg space-y-5 pb-8">
-
-        {/* ── Enable / Disable toggle ──────────────────────────────────── */}
-        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-          <CardContent>
-            <div className="flex flex-row items-center gap-3">
-              <div className="grow">
-                <p className="font-semibold text-md" style={{ color: 'var(--color-heading)' }}>Enable AI Summarization</p>
-              </div>
-              <ToggleSwitch
-                checked={enabled}
-                onChange={(e) => setEnabled(e.target.checked)}
-              />
+      <div className="w-full max-w-lg space-y-6 pb-8">
+        <section aria-labelledby="context-intro-heading" className="space-y-4">
+          <div className="flex items-start gap-3">
+            <Sparkles aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-[var(--color-purple-600)]" />
+            <div className="space-y-1">
+              <h2 id="context-intro-heading" className="font-semibold text-[var(--color-heading)]">Personalise your AI summaries</h2>
+              <p className="text-sm leading-relaxed text-purple-700">
+                The more context you share, the more tailored and useful your weekly summaries will be. All fields are optional.
+              </p>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* ── Intro banner ────────────────────────────────────────────────── */}
-        <div
-          className="rounded-2xl p-4 flex items-start gap-3"
-          style={{
-            background: 'linear-gradient(135deg, var(--color-purple-100), var(--color-tertiary-200))',
-            border: '1px solid var(--color-purple-200)',
-          }}
-        >
-          <span className="text-2xl mt-0.5">✨</span>
-          <div>
-            <p className="font-semibold text-md" style={{ color: 'var(--color-heading)' }}>
-              Personalise your AI summaries
-            </p>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--color-body)', opacity: 0.75 }}>
-              The more context you share, the more tailored and useful your weekly summaries will be.
-              All fields are optional.
-            </p>
           </div>
-        </div>
 
-        {/* ── Settings cards (disabled when master switch is off) ──────────── */}
-        <div
-          className="space-y-5 transition-all duration-300"
-          style={{
-            opacity: enabled ? 1 : 0.45,
-            pointerEvents: enabled ? 'auto' : 'none',
-          }}
-        >
+          <div className="flex min-h-16 items-center justify-between gap-4 border-b border-border pb-4">
+            <p className="font-semibold text-foreground">Enable AI Summarization</p>
+            <ToggleSwitch id="context-ai-enabled" label="Enable AI Summarization" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
+          </div>
+        </section>
 
-          {/* ── Baby birthdate ────────────────────────────────────────────── */}
-          <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Baby className="w-4 h-4" style={{ color: 'var(--color-purple-500)' }} />
+        <fieldset disabled={!enabled} className="space-y-6">
+          <legend className="sr-only">AI summary context fields</legend>
+          <section aria-labelledby="birthdate-heading" className="space-y-2 border-b border-border pb-6">
+            <div className="space-y-1">
+              <h2 id="birthdate-heading" className="flex items-center gap-2 text-base font-semibold text-[var(--color-heading)]">
+                <Baby aria-hidden="true" className="size-4 shrink-0 text-[var(--color-purple-600)]" />
                 Baby's Birthdate
-              </CardTitle>
-              <CardDescription>
+              </h2>
+              <p id="babyBirthdate-help" className="text-sm text-purple-700">
                 Helps the AI contextualise your pumping journey by age.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Input
-                id="babyBirthdate"
-                type="date"
-                value={babyBirthdate}
-                onChange={(e) => setBabyBirthdate(e.target.value)}
-                className="bg-background/50"
-                max={new Date().toISOString().split('T')[0]}
-              />
-            </CardContent>
-          </Card>
+              </p>
+            </div>
+            <Label htmlFor="babyBirthdate" className="sr-only">Baby's Birthdate</Label>
+            <Input
+              id="babyBirthdate"
+              type="date"
+              value={babyBirthdate}
+              onChange={(e) => setBabyBirthdate(e.target.value)}
+              aria-describedby="babyBirthdate-help"
+              className="min-h-11 max-w-sm bg-background/70 disabled:cursor-not-allowed disabled:opacity-60"
+              max={new Date().toISOString().split('T')[0]}
+            />
+          </section>
 
-          {/* ── Feeding method ────────────────────────────────────────────── */}
-          <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Milk className="w-4 h-4" style={{ color: 'var(--color-purple-500)' }} />
+          <section aria-labelledby="feeding-heading" aria-describedby="feeding-help" className="space-y-3 border-b border-border pb-6">
+            <div className="space-y-1">
+              <h2 id="feeding-heading" className="flex items-center gap-2 text-base font-semibold text-[var(--color-heading)]">
+                <Milk aria-hidden="true" className="size-4 shrink-0 text-[var(--color-purple-600)]" />
                 Feeding Method
-              </CardTitle>
-              <CardDescription>
-                How are you currently feeding your baby?
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-3">
+              </h2>
+              <p id="feeding-help" className="text-sm text-purple-700">How are you currently feeding your baby?</p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="group" aria-labelledby="feeding-heading">
               {(
                 [
-                  { value: 'exclusive', label: 'Exclusive Pumping', emoji: '🍼' },
-                  { value: 'supplemental', label: 'Supplemental', emoji: '🤱' },
-                ] as { value: NonNullable<FeedingMethod>; label: string; emoji: string }[]
-              ).map(({ value, label, emoji }) => {
+                  { value: 'exclusive', label: 'Exclusive Pumping', Icon: Milk },
+                  { value: 'supplemental', label: 'Supplemental', Icon: Baby },
+                ] as { value: NonNullable<FeedingMethod>; label: string; Icon: typeof Milk }[]
+              ).map(({ value, label, Icon }) => {
                 const selected = feedingMethod === value;
                 return (
                   <button
                     key={value}
                     id={`feedingMethod-${value}`}
+                    type="button"
+                    aria-pressed={selected}
                     onClick={() => setFeedingMethod(selected ? undefined : value)}
-                    className="rounded-xl p-4 text-left transition-all duration-200"
-                    style={{
-                      border: selected
-                        ? '2px solid var(--color-purple-500)'
-                        : '2px solid var(--color-purple-200)',
-                      background: selected
-                        ? 'linear-gradient(135deg, var(--color-purple-100), var(--color-tertiary-100))'
-                        : 'transparent',
-                      transform: selected ? 'scale(1.02)' : 'scale(1)',
-                      boxShadow: selected ? '0 4px 12px color-mix(in oklch, var(--color-purple-400) 20%, transparent)' : 'none',
-                    }}
+                    className={`flex min-h-14 items-center gap-3 rounded-lg border px-3 py-3 text-left text-sm transition-colors duration-150 hover:bg-purple-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-purple-500)] focus-visible:ring-offset-2 motion-reduce:transition-none disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:opacity-60 ${selected ? 'border-purple-400 bg-purple-50 text-purple-900' : 'border-border bg-transparent text-foreground'}`}
                   >
-                    <span className="text-xl">{emoji}</span>
-                    <p
-                      className="text-sm font-medium mt-1"
-                      style={{ color: selected ? 'var(--color-purple-700)' : 'var(--color-body)' }}
-                    >
-                      {label}
-                    </p>
+                    <Icon aria-hidden="true" className="size-5 shrink-0 text-[var(--color-purple-700)]" />
+                    <span className="font-medium">{label}</span>
                   </button>
                 );
               })}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
-          {/* ── Pumping goals ─────────────────────────────────────────────── */}
-          <Card className="bg-card/50 backdrop-blur-sm border-white/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Target className="w-4 h-4" style={{ color: 'var(--color-purple-500)' }} />
+          <section aria-labelledby="goals-heading" className="space-y-3">
+            <div className="space-y-1">
+              <h2 id="goals-heading" className="flex items-center gap-2 text-base font-semibold text-[var(--color-heading)]">
+                <Target aria-hidden="true" className="size-4 shrink-0 text-[var(--color-purple-600)]" />
                 Pumping Goals
-              </CardTitle>
-              <CardDescription>
-                Select all that apply — you can have multiple goals.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
+              </h2>
+              <p id="goals-help" className="text-sm text-purple-700">Select all that apply — you can have multiple goals.</p>
+            </div>
+            <div className="space-y-1" role="group" aria-labelledby="goals-heading" aria-describedby="goals-help">
               {PUMPING_GOALS.map(({ key, label, description }) => {
                 const checked = pumpingGoals[key];
                 return (
                   <button
                     key={key}
                     id={`goal-${key}`}
+                    type="button"
+                    aria-pressed={checked}
                     onClick={() => toggleGoal(key)}
-                    className="w-full flex items-center gap-3 rounded-xl p-3 text-left transition-all duration-200"
-                    style={{
-                      border: checked
-                        ? '1.5px solid var(--color-purple-400)'
-                        : '1.5px solid var(--color-purple-100)',
-                      background: checked
-                        ? 'color-mix(in oklch, var(--color-purple-100) 60%, transparent)'
-                        : 'transparent',
-                    }}
+                    className={`flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors duration-150 hover:bg-purple-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-purple-500)] focus-visible:ring-offset-2 motion-reduce:transition-none disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:opacity-60 ${checked ? 'bg-purple-50/80' : 'bg-transparent'}`}
                   >
                     {checked
-                      ? <CheckCircle2 className="w-5 h-5 shrink-0" style={{ color: 'var(--color-purple-600)' }} />
-                      : <Circle className="w-5 h-5 shrink-0" style={{ color: 'var(--color-grey-400)' }} />
+                      ? <CheckCircle2 aria-hidden="true" className="size-5 shrink-0 text-[var(--color-purple-700)]" />
+                      : <Circle aria-hidden="true" className="size-5 shrink-0 text-purple-700" />
                     }
-                    <div className="min-w-0">
-                      <p
-                        className="text-sm font-medium"
-                        style={{ color: checked ? 'var(--color-purple-800)' : 'var(--color-body)' }}
-                      >
+                    <span className="min-w-0">
+                      <span className={`block text-sm font-medium ${checked ? 'text-purple-900' : 'text-foreground'}`}>
                         {label}
-                      </p>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--color-body)', opacity: 0.6 }}>
+                      </span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-purple-700">
                         {description}
-                      </p>
-                    </div>
+                      </span>
+                    </span>
                   </button>
                 );
               })}
-            </CardContent>
-          </Card>
-
-        </div>
-
-
+            </div>
+          </section>
+        </fieldset>
       </div>
     </BasePage>
   );

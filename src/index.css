@@ -191,27 +191,6 @@
     --sidebar-ring: oklch(0.439 0 0);
 }
 
-/* Custom keyframes and animation utilities for AiLoader */
-@keyframes spin-cw  { to { transform: rotate(360deg);  } }
-@keyframes spin-ccw { to { transform: rotate(-360deg); } }
-
-@keyframes pulse-s1 {
-  0%, 100% { opacity: 1;    transform: rotate(0deg)   scale(1);    }
-  50%      { opacity: 0.75; transform: rotate(180deg) scale(0.88); }
-}
-@keyframes pulse-s2 {
-  0%, 100% { opacity: 0.9; }
-  50%      { opacity: 0.5; }
-}
-@keyframes pulse-s3 {
-  0%, 100% { opacity: 0.7; transform: rotate(0deg)   scale(1);    }
-  50%      { opacity: 1;   transform: rotate(180deg) scale(1.15); }
-}
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.6; transform: scale(1);    }
-  50%      { opacity: 1;   transform: scale(1.15); }
-}
-
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
@@ -220,28 +199,6 @@
 
 @utility animate-shake {
   animation: shake 0.6s ease-in-out;
-}
-
-@utility animate-spin-cw {
-  animation: spin-cw 3.6s linear infinite, pulse-s1 1.8s ease-in-out infinite;
-}
-@utility animate-spin-ccw {
-  animation: spin-ccw 2.4s linear infinite, pulse-s2 1.8s ease-in-out 0.3s infinite;
-}
-@utility animate-spin-cw-s {
-  animation: spin-cw 1.8s linear infinite, pulse-s3 1.8s ease-in-out 0.9s infinite;
-}
-@utility animate-glow {
-  animation: glow-pulse 1.8s ease-in-out infinite;
-}
-
-@utility ai-loader-star {
-  clip-path: polygon(
-    50%  0%,   68%  32%,
-    100% 50%,  68%  68%,
-    50%  100%, 32%  68%,
-    0%   50%,  32%  32%
-  );
 }
 
 @layer base {

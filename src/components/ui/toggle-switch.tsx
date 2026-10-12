@@ -1,47 +1,32 @@
+import type { ChangeEvent } from 'react';
+
 export default function ToggleSwitch({
+  id,
+  label,
   checked,
   onChange,
 }: {
+  id: string;
+  label: string;
   checked: boolean;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
-    <label className="group inline-flex cursor-pointer items-center select-none">
-      {/* Hidden native checkbox */}
+    <label htmlFor={id} className="inline-flex min-h-11 shrink-0 cursor-pointer items-center">
+      <span className="sr-only">{label}</span>
       <input
+        id={id}
         type="checkbox"
-        className="sr-only"
+        role="switch"
         checked={checked}
         onChange={onChange}
+        className="peer sr-only"
       />
-
-      {/* Track */}
       <span
-        className={[
-          "relative inline-flex h-8 w-14 shrink-0 items-center rounded-full",
-          "transition-colors duration-300 ease-in-out",
-          checked
-            ? "bg-[var(--color-purple-600)] ring-[var(--color-purple-600)]"
-            : "bg-[var(--color-grey-500)] ring-[var(--color-grey-500)]",
-          "group-focus-within:ring-[var(--color-purple-400)]",
-        ].join(" ")}
+        aria-hidden="true"
+        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-150 peer-focus-visible:ring-4 peer-focus-visible:ring-purple-300 motion-reduce:transition-none ${checked ? 'bg-purple-700' : 'bg-grey-500'}`}
       >
-
-        {/* Handle — star-shaped via clip-path */}
-        <span
-          className="relative inline-block h-5 w-5 bg-[var(--color-purple-50)]"
-          style={{
-            clipPath:
-              "polygon(50% 0%, 68% 32%, 100% 50%, 68% 68%, 50% 100%, 32% 68%, 0% 50%, 32% 32%)",
-            transform: `translateX(${checked ? "1.75rem" : "0.25rem"}) rotate(${checked ? "180deg" : "0deg"})`,
-            transition:
-              "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease",
-            boxShadow: checked
-              ? "0 0 8px 2px color-mix(in oklch, var(--color-purple-400) 60%, transparent)"
-              : "0 2px 4px color-mix(in oklch, var(--color-purple-700) 20%, transparent)",
-          }}
-          aria-hidden="true"
-        />
+        <span className={`absolute left-1 size-6 rounded-full bg-white shadow-sm transition-transform duration-150 motion-reduce:transition-none ${checked ? 'translate-x-6' : ''}`} />
       </span>
     </label>
   );

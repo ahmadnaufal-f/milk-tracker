@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Markdown from 'react-markdown';
 import { Card, CardContent } from '@/components/ui/card';
 import BasePage from '@/components/BasePage';
-import { ShieldCheck } from 'lucide-react';
 // @ts-ignore
 import privacyEn from '@/data/privacy-en.md?raw';
 // @ts-ignore
@@ -26,60 +25,35 @@ const PrivacyNoticePage: React.FC = () => {
   );
 
   return (
-    <BasePage showBackButton pageTitle="Privacy Notice">
-      <div className="w-full max-w-lg space-y-5 pb-8">
-        {/* ── Intro banner + language selector ─────────────────────────────── */}
-        <div
-          className="rounded-2xl p-4 flex items-start gap-3"
-          style={{
-            background: 'var(--color-purple-100)',
-            border: '1px solid var(--color-purple-200)',
-          }}
-        >
-          <ShieldCheck className="w-6 h-6 mt-0.5 shrink-0" style={{ color: 'var(--color-purple-500)' }} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-semibold text-md" style={{ color: 'var(--color-heading)' }}>
-                  Your privacy matters
-                </p>
-                <p className="text-sm mt-0.5" style={{ color: 'var(--color-body)', opacity: 0.75 }}>
-                  How we handle and protect the data you track in Milk Tracker.
-                </p>
-              </div>
-
-              {/* ── Language selector (EN / ID) ─────────────────────────────── */}
-              <div
-                role="group"
-                aria-label="Select language"
-                className="flex shrink-0 rounded-lg overflow-hidden"
-                style={{ border: '1px solid var(--color-purple-300)', boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)' }}
-              >
-                {LANGUAGES.map(({ code, label }) => {
-                  const active = locale === code;
-                  return (
-                    <button
-                      key={code}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => setLocale(code)}
-                      className="px-3 py-1 text-xs font-semibold transition-colors duration-150"
-                      style={{
-                        background: active ? 'var(--color-purple-500)' : 'transparent',
-                        color: active ? 'white' : 'var(--color-purple-700)',
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+    <BasePage showBackButton>
+      <div className="w-full max-w-lg space-y-4 pb-8">
+        <div className="flex justify-end">
+          <div
+            role="group"
+            aria-label="Select language"
+            className="flex overflow-hidden rounded-lg border border-purple-300 bg-white/70"
+          >
+            {LANGUAGES.map(({ code, label }) => {
+              const active = locale === code;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setLocale(code)}
+                  className={`min-h-11 px-3 text-sm font-semibold transition-colors ${active
+                    ? 'bg-purple-700 text-white'
+                    : 'text-purple-900 hover:bg-purple-50'}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* ── Notice content ──────────────────────────────────────────────── */}
-        <Card className="bg-card/50 backdrop-blur-sm border-white/10">
+        <Card className="border-purple-100 bg-card/70 shadow-sm">
           <CardContent className="py-6">
             <div className="prose dark:prose-invert prose-sm max-w-none">
               <Markdown

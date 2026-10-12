@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeToSessions, updateSession, deleteSession, PumpingSession, subscribeToSettings } from '@/services/storage';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
+import { ChevronRight, Save, Sparkles } from 'lucide-react';
 import SessionListItem from '@/components/SessionListItem';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '@/firebase';
@@ -143,7 +143,8 @@ const TrackerListCard: React.FC<TrackerListProps> = ({ date, showViewMore = fals
             title
           ) : (
             <>
-              <span className="text-purple-600">✨</span> Today's Pumping <span className="text-purple-600">✨</span>
+              <Sparkles aria-hidden="true" className="size-4 text-purple-600" />
+              Today's Pumping
             </>
           )}
         </h3>
@@ -282,10 +283,10 @@ const ViewMoreButton: React.FC = () => {
   return (
     <div className="text-center">
       <button
-        className="text-purple-400 hover:text-purple-600 text-sm font-medium hover:underline inline-flex items-center transition-colors"
+        className="inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-sm font-medium text-purple-700 transition-colors hover:text-purple-900 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-purple-300 focus-visible:ring-offset-2 motion-reduce:transition-none"
         onClick={() => navigate('/history')}
       >
-        View all history <span className="ml-1">&gt;</span>
+        View all history <ChevronRight aria-hidden="true" className="size-4" />
       </button>
     </div>
   );
